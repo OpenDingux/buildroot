@@ -1235,3 +1235,6 @@ include docs/manual/manual.mk
 .PHONY: $(noconfig_targets)
 
 endif #umask / $(CURDIR) / $(O)
+
+# Include docker-related stuff
+include support/misc/docker.mk
