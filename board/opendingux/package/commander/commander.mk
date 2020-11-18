@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-COMMANDER_VERSION = 9706b2d
+COMMANDER_VERSION = 2022-11-01
 COMMANDER_SITE = $(call github,od-contrib,commander,$(COMMANDER_VERSION))
 COMMANDER_DEPENDENCIES = sdl sdl_gfx sdl_image sdl_ttf dejavu fonts-droid
 
