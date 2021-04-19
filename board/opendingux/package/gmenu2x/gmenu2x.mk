@@ -6,7 +6,10 @@
 GMENU2X_VERSION = 8bfe6d2
 GMENU2X_SITE = $(call github,opendingux,gmenu2x,$(GMENU2X_VERSION))
 GMENU2X_DEPENDENCIES = sdl sdl_ttf sdl_gfx dejavu libpng fonts-droid
-GMENU2X_CONF_OPTS = -DBIND_CONSOLE=ON
+
+GMENU2X_CONF_OPTS = \
+ -DBIND_CONSOLE=ON \
+ -DDEFAULT_FALLBACK_FONTS=",{\"/usr/share/fonts/truetype/droid/DroidSansFallback.ttf\",13}"
 
 ifeq ($(BR2_PACKAGE_GMENU2X_SHOW_CLOCK),y)
 GMENU2X_CONF_OPTS += -DCLOCK=ON
