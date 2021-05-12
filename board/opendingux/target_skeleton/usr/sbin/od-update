@@ -66,13 +66,17 @@ case "$MODEL" in
 				;;
 		esac
 		;;
-	anbernic,rg350|anbernic,rg350m|ylm,rg350|ylm,rg350m|ylm,rg280m|ylm,rg280v|wolsen,playgo)
+	anbernic,rg350|anbernic,rg350m|ylm,rg350|ylm,rg350m|ylm,rg280m|ylm,rg280v)
 		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
 		HWVARIANT_BL="rg350"
 		;;
+  wolsen,playgo)
+		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
+		HWVARIANT_BL="v20_mddr_512mb"
+		;;
 	*)
 		echo "Unknown model $MODEL"
-		exit 1
+		exit 12
 		;;
 esac
 

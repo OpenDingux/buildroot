@@ -73,6 +73,9 @@ if [ $ERR -ne 0 ] ; then
 		11)
 			ERR_MSG="Updated bootloader is corrupted!\nPlease report this bug!"
 			;;
+		12)
+			ERR_MSG="Can't detect the device.\nPlease ensure that you are running a stock firmware"
+			;;
 	esac
 
 	export DIALOGRC="/tmp/dialog_err.rc"
