@@ -1,8 +1,39 @@
 #!/bin/sh
 
-if [ $# -ne 1 ] ; then
-	echo "Incorrect number of parameters.\nUsage:\n\tod-update <data_dir>"
+if [ $# -ne 1 ]; then
+	echo -e "Incorrect number of parameters.
+Usage:
+\t$0 <data_dir>"
 	exit 1
+fi
+
+if [ -z "$FORCE_DEVICE" ]; then
+	DEVICE=$(thisdevice --detect)
+	[ -z "$DEVICE" ] && DEVICE=undetected
+else
+	DEVICE="$FORCE_DEVICE"
+fi
+
+DEVICEINFO=$(thisdevice --device "$DEVICE" 2> /dev/null)
+if [ $? -ne 0 ] ; then
+	echo "Unknown device $DEVICE"
+	exit 12
+fi
+
+eval "$DEVICEINFO"
+
+BOOTLD=$1/ubiboot-$DEVICE_BOOTLOADER.bin
+DEVICETREE=$1/$DEVICE_DEVICETREE.dtb
+
+if [ ! -r "$BOOTLD" ]; then
+	echo "Bootloader $2 does not exists"
+	exit 13
+fi
+
+[ ! -r $DEVICETREE ] && DEVICETREE=/sys/firmware/fdt
+if [ ! -r "$DEVICETREE" ]; then
+	echo "Device tree $3 does not exists"
+	exit 14
 fi
 
 $(sed -n 's/.*root=\([[:alnum:]:\/]\+\).*rootfstype=\([[:alpha:]]\+\).*/export SYSPART=\1\nexport SYSPART_TYPE=\2/p' /proc/cmdline)
@@ -12,83 +43,22 @@ $(sed -n 's/.*root=\([[:alnum:]:\/]\+\).*rootfstype=\([[:alpha:]]\+\).*/export S
 [ -z "$SYSPART" ] && export SYSPART=/dev/mmcblk0p1
 [ -z "$SYSPART_TYPE" ] && export SYSPART_TYPE=vfat
 
-HWVARIANT_BL=""
-HWVARIANT_DT=""
-
-HWVARIANT_CMDLINE="$(sed -n 's/.*hwvariant=\([[:alnum:]_]\+\).*/\1/p' /proc/cmdline)"
-
-if [ -e /sys/firmware/devicetree/base/compatible ] ; then
-	MODEL=$(sed -n 's/\(.*\)ingenic.*/\1/p' /sys/firmware/devicetree/base/compatible)
-	HWVARIANT=$(cat /sys/firmware/devicetree/base/model)
-elif [ "$HWVARIANT_CMDLINE" = "rg350" ] ; then
-	if [ -r /sys/devices/platform/jz-lcd.0/graphics/fb0/modes -a \
-		"$(grep '640x480' /sys/devices/platform/jz-lcd.0/graphics/fb0/modes)" ] ; then
-		MODEL=ylm,rg350m
-	elif [ "$(uname -v)" = "#128 Fri May 29 11:19:07 CST 2020" ] ; then
-		MODEL=ylm,rg280m
-	elif [ "$(uname -v)" = "#171 Tue Jun 30 18:36:05 CST 2020" ] ; then
-		MODEL=ylm,rg280v
-	elif [ "$(uname -v)" = "#2 Sat Mar 28 16:19:20 CST 2020" ] ; then
-		MODEL=wolsen,playgo
-	else
-		MODEL=ylm,rg350
-	fi
-else
-	MODEL=gcw,zero
-	HWVARIANT="$HWVARIANT_CMDLINE"
-fi
-
 # Default to SYSDEV=/dev/mmcblk0
 SYSDEV=$(echo $SYSPART |sed -n 's/\(\/dev\/mmcblk[0-9]\+\)p[0-9]\+/\1/p')
 
-[ "$MODEL" = "retromini" ] && MODEL=ylm,rs90
-
-case "$MODEL" in
-	ylm,rs90|ylm,pmp5|ylm,rg99)
-		HWVARIANT_BL="$HWVARIANT_CMDLINE"
-		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
-		INSTALL_ON_NAND=Y
-		SYSDEV=/dev/mtd0
-		;;
-	ylm,rs97|ylm,rg300|wolsen,ldkv|wolsen,ldkh)
-		HWVARIANT_BL="lepus"
-		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
-		;;
-	gcw,zero)
-		case "$HWVARIANT" in
-			"GCW Zero"|v20_mddr_512mb)
-				HWVARIANT_BL="v20_mddr_512mb"
-				HWVARIANT_DT="gcw0"
-				;;
-			*)
-				HWVARIANT_BL="v11_ddr2_256mb"
-				HWVARIANT_DT="gcw0_proto"
-				;;
-		esac
-		;;
-	anbernic,rg350|anbernic,rg350m|ylm,rg350|ylm,rg350m|ylm,rg280m|ylm,rg280v|wolsen,playgo)
-		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
-		HWVARIANT_BL="rg350"
-		;;
-	*)
-		echo "Unknown model $MODEL"
-		exit 1
-		;;
-esac
+if [ "$DEVICE_STORAGE" = 'nand' ];then
+	INSTALL_ON_NAND=Y
+	SYSDEV=/dev/mtd0
+fi
 
 MNT=/mnt/_system_update
 [ "$(grep kernel_bak /proc/cmdline)" ] && KERNEL_IS_BACKUP=Y
 [ "$(grep rootfs_bak /proc/cmdline)" ] && ROOTFS_IS_BACKUP=Y
 
-BOOTLD=$1/ubiboot-${HWVARIANT_BL}.bin
 KERNEL=$1/uzImage.bin
 ROOTFS=$1/rootfs.squashfs
 MODULES_FS=$1/modules.squashfs
 MININIT=$1/mininit-syspart
-DEVICETREE=$1/${HWVARIANT_DT}.dtb
-
-[ ! -r $DEVICETREE ] && DEVICETREE=/sys/firmware/fdt
-
 
 handle_err() {
 	rm -f $MNT/new_uzImage.bin $MNT/new-rootfs.squashfs \

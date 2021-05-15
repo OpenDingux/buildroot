@@ -104,12 +104,12 @@ case $1 in
 		if [ -z "$STORAGE" ]; then
 			STORAGE=mmc
 		fi
-		echo "$LINE" | cut -d';' -f3
-		echo -e Codename:"\t" $(echo "$LINE" | cut -d';' -f2)
-		echo -e Family:"\t\t" $(echo "$LINE" | cut -d';' -f1)
-		echo -e Bootloader:"\t" $(echo "$LINE" | cut -d';' -f4)
-		echo -e Devicetree:"\t" $(echo "$LINE" | cut -d';' -f5)
-		echo -e Storage:"\t" $STORAGE
+		echo 'DEVICE_FAMILY="'$(echo "$LINE" | cut -d';' -f1 | xargs)'"'
+		echo 'DEVICE_CODE="'$(echo "$LINE" | cut -d';' -f2 | xargs)'"'
+		echo 'DEVICE_NAME="'$(echo "$LINE" | cut -d';' -f3 | xargs)'"'
+		echo 'DEVICE_BOOTLOADER="'$(echo "$LINE" | cut -d';' -f4)'"'
+		echo 'DEVICE_DEVICETREE="'$(echo "$LINE" | cut -d';' -f5)'"'
+		echo 'DEVICE_STORAGE="'$STORAGE'"'
 		;;
 	--detect)
 		detect_device

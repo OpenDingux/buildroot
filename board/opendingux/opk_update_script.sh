@@ -73,6 +73,18 @@ if [ $ERR -ne 0 ] ; then
 		11)
 			ERR_MSG="Updated bootloader is corrupted!\nPlease report this bug!"
 			;;
+		12)
+			ERR_MSG="Can't detect the device.\nPlease ensure that you are running a stock firmware"
+			;;
+		13)
+			ERR_MSG="Bootloader file $BOOTLOADER is missing\nPlease report this bug!"
+			;;
+		14)
+			ERR_MSG="Device tree file $DEVICETREE is missing\nPlease report this bug!"
+			;;
+		*)
+			ERR_MSG="Unexpected return code: $ERR\nPlease report this bug!"
+			;;
 	esac
 
 	export DIALOGRC="/tmp/dialog_err.rc"
