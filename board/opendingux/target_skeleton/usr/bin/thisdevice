@@ -69,8 +69,12 @@ detect_device() {
 			"GCW Zero"|v20_mddr_512mb)
 				DEVICE=gcw,zero
 				;;
-			*)
+			v11_ddr2_256mb)
 				DEVICE=gcw,zero_proto
+				;;
+			*)
+				echo "Unknown device." 1>&2
+				exit 1
 				;;
 		esac
 	fi
