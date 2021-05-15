@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -ne 1 ] ; then
+if [ $# -lt 1 ] ; then
 	echo "Incorrect number of parameters.\nUsage:\n\tod-update <data_dir>"
 	exit 1
 fi
@@ -137,7 +137,7 @@ if [ -r $ROOTFS -a "$0" != "/tmp/od-update" ] ; then
 			umount $MNT
 
 			# Run the updated od-update script from the rootfs
-			exec /tmp/od-update $*
+			exec /tmp/od-update "$@"
 		else
 			umount $MNT
 		fi
