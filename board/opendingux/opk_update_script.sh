@@ -108,9 +108,13 @@ echo 'Update in progress - please be patient.'
 echo
 
 if [ "$(whoami)" = "root" -a ! -x /usr/sbin/od-update ]; then
-	PATH=$(pwd):$PATH FORCE_DEVICE="$DEVICE" ./od-update $1
+	./od-update "$1" "$DEVICE"
 else
-	sudo PATH=$(pwd):$PATH FORCE_DEVICE="$DEVICE" od-update $1
+	# Old firmware's od-update requires equally one argument
+	# and ENV variables are restricted by sudo
+	# so the only way to pass the device is via a tmp file
+	echo "$DEVICE" > /tmp/_force_thisdevice
+	sudo od-update $1
 fi
 
 # ----------
