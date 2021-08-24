@@ -1,0 +1,125 @@
+#!/bin/sh
+
+display_usage() {
+	cat <<-END
+Usage $0 <command> [argument]:
+
+Available commands are:
+    --families    Show list of supported device families
+    --devices <family>
+                  Show list of devices for the given family
+    --device <device>
+                  Show device information, including bootloader and devicetree
+    --detect      Try to detect the current device
+    --help, -h    Show this message
+END
+}
+
+DEVICES=$(cat <<-END
+gcw0 ;gcw,zero        ;GCW-Zero;v20_mddr_512mb;gcw0;
+gcw0 ;gcw,zero_proto  ;GCW-Zero Prototype (256 MiB);v11_ddr2_256mb;gcw0_proto;
+gcw0 ;ylm,rg350       ;Anbernic RG-350 / RG-350P;rg350;rg350;
+gcw0 ;ylm,rg350m      ;Anbernic RG-350M (metal cover, 640x480 IPS screen);rg350;rg350m;
+gcw0 ;ylm,rg280v      ;Anbernic RG-280V;rg350;rg280v;
+gcw0 ;ylm,rg280m      ;Anbernic RG-280M;rg350;rg280m;
+gcw0 ;wolsen,playgo   ;PlayGo or PocketGo 2 second gen (v2, with a reset button);rg350;playgo;
+gcw0 ;wolsen,pocketgo2;PocketGo 2 or PlayGo first gen (v1, without a reset button);v20_mddr_512mb;pocketgo2;
+rs90 ;ylm,rs90v21     ;Anbernic RS-90 v2.1;v21;rs90;nand
+rs90 ;ylm,rs90v30     ;Anbernic RS-90 v3.0;v30;rs90;nand
+rs90 ;ylm,rg99        ;Anbernic RG-99;v21;rg99;nand
+lepus;ylm,rs97        ;Anbernic RS-97 v2.0;lepus;rs97
+lepus;ylm,rg300       ;Anbernic RG-300 non-IPS;lepus;rg300
+lepus;wolsen,ldkv     ;LDK (vertical);lepus;ldkv;
+lepus;wolsen,ldkh     ;LDK (horizontal);lepus;ldkh;
+END
+)
+
+if [ $# -le 0 ]; then
+	display_usage
+	exit 1
+fi
+
+if [ $1 = "--help" ] || [ $1 = "-h" ]; then
+	display_usage
+	exit 0
+fi
+
+detect_device() {
+	HWVARIANT_CMDLINE="$(sed -n 's/.*hwvariant=\([[:alnum:]_]\+\).*/\1/p' /proc/cmdline)"
+	DEVICE=
+	if [ -e /sys/firmware/devicetree/base/compatible ] ; then
+		DEVICE=$(sed -n 's/\(.*\)ingenic.*/\1/p' /sys/firmware/devicetree/base/compatible)
+		# two versions of rs90 use the same devicetree
+		[ "$DEVICE" = ylm,rs90 ] && DEVICE="$DEVICE$HWVARIANT_CMDLINE"
+	elif [ "$HWVARIANT_CMDLINE" = "rg350" ] ; then
+		if [ -r /sys/devices/platform/jz-lcd.0/graphics/fb0/modes -a \
+		     "$(grep '640x480' /sys/devices/platform/jz-lcd.0/graphics/fb0/modes)" ] ; then
+			DEVICE=ylm,rg350m
+		elif [ "$(uname -v)" = "#128 Fri May 29 11:19:07 CST 2020" ] ; then
+			DEVICE=ylm,rg280m
+		elif [ "$(uname -v)" = "#171 Tue Jun 30 18:36:05 CST 2020" ] ; then
+			DEVICE=ylm,rg280v
+		elif [ "$(uname -v)" = "#2 Sat Mar 28 16:19:20 CST 2020" ] ; then
+			DEVICE=wolsen,playgo
+		else
+			DEVICE=ylm,rg350
+		fi
+	else
+		case "$HWVARIANT_CMDLINE" in
+			"GCW Zero"|v20_mddr_512mb)
+				DEVICE=gcw,zero
+				;;
+			v11_ddr2_256mb)
+				DEVICE=gcw,zero_proto
+				;;
+			*)
+				echo "Unknown device." 1>&2
+				exit 1
+				;;
+		esac
+	fi
+	echo $DEVICE
+}
+
+case $1 in
+	--families)
+		echo "$DEVICES" | cut -d';' -f1 | uniq
+		;;
+	--devices)
+		FAMILY=$2
+		if ! echo "$DEVICES" | cut -d';' -f1 | grep -qe "^$FAMILY[[:space:]]*$"; then
+			echo "unknown family $FAMILY (--families will show all families)" 1>&2
+			exit 1
+		fi
+
+		echo "$DEVICES" | grep -e "^$FAMILY" | while read i; do
+			echo "$(echo "$i" | cut -d';' -f2)" - $(echo $i | cut -d';' -f3)
+		done
+		;;
+	--device)
+		DEVICE=$2
+		if ! echo "$DEVICES" | grep -qe ";$DEVICE[[:space:]]*;"; then
+			echo "unknown device $DEVICE (--devices will show all devices)" 1>&2
+			exit 1
+		fi
+
+		LINE=$(echo "$DEVICES" | grep -e ";$DEVICE" | head -n1)
+		STORAGE=$(echo "$LINE" | cut -d';' -f6)
+		if [ -z "$STORAGE" ]; then
+			STORAGE=mmc
+		fi
+		echo 'DEVICE_FAMILY="'$(echo "$LINE" | cut -d';' -f1 | xargs)'"'
+		echo 'DEVICE_CODE="'$(echo "$LINE" | cut -d';' -f2 | xargs)'"'
+		echo 'DEVICE_NAME="'$(echo "$LINE" | cut -d';' -f3 | xargs)'"'
+		echo 'DEVICE_BOOTLOADER="'$(echo "$LINE" | cut -d';' -f4)'"'
+		echo 'DEVICE_DEVICETREE="'$(echo "$LINE" | cut -d';' -f5)'"'
+		echo 'DEVICE_STORAGE="'$STORAGE'"'
+		;;
+	--detect)
+		detect_device
+		;;
+	*)
+		echo "invalid command $1 (-h will show valid options)" 1>&2
+		exit 1
+		;;
+esac
