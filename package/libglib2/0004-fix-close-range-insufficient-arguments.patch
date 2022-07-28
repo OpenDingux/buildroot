@@ -1,0 +1,11 @@
+--- a/glib/gspawn.c	2021-05-11 03:57:23.111306200 -0700
++++ b/glib/gspawn.c	2022-07-25 06:10:59.662642354 -0700
+@@ -1494,7 +1494,7 @@
+    *
+    * Handle ENOSYS in case it’s supported in libc but not the kernel; if so,
+    * fall back to safe_fdwalk(). */
+-  if (close_range (lowfd, G_MAXUINT) != 0 && errno == ENOSYS)
++  if (close_range (lowfd, G_MAXUINT,  CLOSE_RANGE_CLOEXEC) != 0 && errno == ENOSYS || errno == EINVAL)
+ #endif  /* HAVE_CLOSE_RANGE */
+   (void) safe_fdwalk (close_func, GINT_TO_POINTER (lowfd));
+ #endif
