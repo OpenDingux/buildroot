@@ -41,7 +41,7 @@ EXEC="$(mktemp -p "${BUILDDIR}" -t .check-headers.XXXXXX)"
 # This only applies to kernels >= 3.0, but those are the only one
 # we actually care about; we treat all 2.6.x kernels equally.
 ${HOSTCC} -imacros "${SYSROOT}/usr/include/linux/version.h" \
-          -x c -o "${EXEC}" - <<_EOF_
+	-x c -o "${EXEC}" - <<_EOF_
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

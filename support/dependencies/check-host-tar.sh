@@ -23,8 +23,8 @@ version_bsd=`$tar --version | grep 'bsdtar'`
 
 # BSD tar does not have all the command-line options
 if [ -n "${version_bsd}" ] ; then
-    # echo nothing: no suitable tar found
-    exit 1
+	# echo nothing: no suitable tar found
+	exit 1
 fi
 
 # Minimal version = 1.27 (previous versions do not correctly unpack archives

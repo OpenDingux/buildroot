@@ -22,28 +22,28 @@ psplash_write() {
 #
 for i in /etc/init.d/S??* ;do
 
-     # Ignore dangling symlinks (if any).
-     [ ! -f "$i" ] && continue
+	# Ignore dangling symlinks (if any).
+	[ ! -f "$i" ] && continue
 
-	 if [ -n "$SPLASH" -a -x /usr/bin/psplash ] ; then
-		 /usr/bin/psplash-write "PROGRESS $PERCENT"
-		 PERCENT=`expr $PERCENT + $PERCENT_INCR`
-	 fi
+	if [ -n "$SPLASH" -a -x /usr/bin/psplash ] ; then
+		/usr/bin/psplash-write "PROGRESS $PERCENT"
+		PERCENT=`expr $PERCENT + $PERCENT_INCR`
+	fi
 
-     case "$i" in
-	*.sh)
-	    # Source shell script for speed.
-	    (
-		trap - INT QUIT TSTP
-		set start
-		. $i
-	    )
-	    ;;
-	*)
-	    # No sh extension, so fork subprocess.
-	    $i start
-	    ;;
-    esac
+	case "$i" in
+		*.sh)
+			# Source shell script for speed.
+			(
+			trap - INT QUIT TSTP
+			set start
+			. $i
+			)
+			;;
+		*)
+			# No sh extension, so fork subprocess.
+			$i start
+			;;
+	esac
 done
 
 if [ -n "$SPLASH" -a -x /usr/bin/psplash ] ; then

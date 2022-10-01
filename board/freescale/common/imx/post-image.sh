@@ -46,9 +46,9 @@ genimage_type()
 		echo "genimage.cfg.template_imx8"
 	elif grep -Eq "^BR2_LINUX_KERNEL_INSTALL_TARGET=y$" ${BR2_CONFIG}; then
 		if grep -Eq "^BR2_TARGET_UBOOT_SPL=y$" ${BR2_CONFIG}; then
-		    echo "genimage.cfg.template_no_boot_part_spl"
+			echo "genimage.cfg.template_no_boot_part_spl"
 		else
-		    echo "genimage.cfg.template_no_boot_part"
+			echo "genimage.cfg.template_no_boot_part"
 		fi
 	elif grep -Eq "^BR2_TARGET_UBOOT_SPL=y$" ${BR2_CONFIG}; then
 		echo "genimage.cfg.template_spl"
@@ -75,9 +75,9 @@ uboot_image()
 	elif grep -Eq "^BR2_TARGET_UBOOT_FORMAT_IMX=y$" ${BR2_CONFIG}; then
 		echo "u-boot.imx"
 	elif grep -Eq "^BR2_TARGET_UBOOT_FORMAT_DTB_IMG=y$" ${BR2_CONFIG}; then
-	    echo "u-boot-dtb.img"
+		echo "u-boot-dtb.img"
 	elif grep -Eq "^BR2_TARGET_UBOOT_FORMAT_IMG=y$" ${BR2_CONFIG}; then
-	    echo "u-boot.img"
+		echo "u-boot.img"
 	fi
 }
 

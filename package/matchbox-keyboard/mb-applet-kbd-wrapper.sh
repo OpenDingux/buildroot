@@ -2,7 +2,7 @@
 #
 
 killall matchbox-keyboard
-if [ ! $? -eq 0 ] 
+if [ ! $? -eq 0 ]
 then
-    matchbox-keyboard &
+	matchbox-keyboard &
 fi

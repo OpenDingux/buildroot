@@ -8,30 +8,30 @@ ACTION=$1
 
 
 if [ "x$ACTION" = "xstop" ]; then
-    SORTARG="-r"
+	SORTARG="-r"
 else
-    ACTION="start"
+	ACTION="start"
 fi
 
 LOCALINITFILES=`ls -1 /usr/local/etc/init.d/S??* 2>/dev/null | sed -e 's%\(.*\)/\([^/]*\)$%\2 \1/\2%' | sort -k 1 $SORTARG |cut -d ' ' -f 2`
 
 for i in $LOCALINITFILES ; do
 
-     # Ignore dangling symlinks (if any).
-     [ ! -f "$i" ] && continue
+	# Ignore dangling symlinks (if any).
+	[ ! -f "$i" ] && continue
 
-     case "$i" in
-	*.sh)
-	    # Source shell script for speed.
-	    (
+	case "$i" in
+		*.sh)
+		# Source shell script for speed.
+		(
 		trap - INT QUIT TSTP
 		set $ACTION
 		. $i
-	    )
-	    ;;
+		)
+		;;
 	*)
-	    # No sh extension, so fork subprocess.
-	    $i $ACTION
-	    ;;
-    esac
+		# No sh extension, so fork subprocess.
+		$i $ACTION
+		;;
+	esac
 done

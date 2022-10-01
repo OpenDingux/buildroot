@@ -95,34 +95,34 @@ dtb_sama5d4_xplained="at91-sama5d4_xplained.dtb"
 usage() {
 	cat << EOF
 Usage:
-  $0 <builddir_path> <interface> <board>
+	$0 <builddir_path> <interface> <board>
 
 Available boards:
-  at91sam9260ek
-  at91sam9g45m10ek
-  at91sam9rlek
-  at91sam9g15ek
-  at91sam9g20ek
-  at91sam9g25ek
-  at91sam9x25ek
-  at91sam9g35ek
-  at91sam9x35ek
-  sama5d31ek
-  sama5d33ek
-  sama5d34ek
-  sama5d35ek
-  sama5d36ek
-  sama5d31ek_revc (Until rev. C)
-  sama5d33ek_revc (Until rev. C)
-  sama5d34ek_revc (Until rev. C)
-  sama5d35ek_revc (Until rev. C)
-  sama5d36ek_revc (Until rev. C)
-  sama5d3_xplained
-  sama5d4ek
-  sama5d4_xplained
+	at91sam9260ek
+	at91sam9g45m10ek
+	at91sam9rlek
+	at91sam9g15ek
+	at91sam9g20ek
+	at91sam9g25ek
+	at91sam9x25ek
+	at91sam9g35ek
+	at91sam9x35ek
+	sama5d31ek
+	sama5d33ek
+	sama5d34ek
+	sama5d35ek
+	sama5d36ek
+	sama5d31ek_revc (Until rev. C)
+	sama5d33ek_revc (Until rev. C)
+	sama5d34ek_revc (Until rev. C)
+	sama5d35ek_revc (Until rev. C)
+	sama5d36ek_revc (Until rev. C)
+	sama5d3_xplained
+	sama5d4ek
+	sama5d4_xplained
 
 Example:
-  $0 ./output /dev/ttyACM0 at91sam9g45m10ek
+	$0 ./output /dev/ttyACM0 at91sam9g45m10ek
 EOF
 }
 

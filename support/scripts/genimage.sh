@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 die() {
-  cat <<EOF >&2
+	cat <<EOF >&2
 Error: $@
 
 Usage: ${0} -c GENIMAGE_CONFIG_FILE
 EOF
-  exit 1
+	exit 1
 }
 
 # Parse arguments and put into argument list of the script
@@ -17,14 +17,17 @@ GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
 
 while true ; do
 	case "$1" in
-	-c)
-	  GENIMAGE_CFG="${2}";
-	  shift 2 ;;
-	--) # Discard all non-option parameters
-	  shift 1;
-	  break ;;
-	*)
-	  die "unknown option '${1}'" ;;
+		-c)
+			GENIMAGE_CFG="${2}";
+			shift 2
+			;;
+		--) # Discard all non-option parameters
+			shift 1;
+			break
+			;;
+		*)
+			die "unknown option '${1}'"
+			;;
 	esac
 done
 

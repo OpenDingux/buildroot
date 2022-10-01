@@ -9,16 +9,16 @@ rm -rf "${SYMBOLS_DIR}"
 mkdir -p "${SYMBOLS_DIR}"
 
 error() {
-    fmt="${1}"; shift
-    printf "%s: ${fmt}" "${NAME}" "${@}" >&2
-    exit 1
+	fmt="${1}"; shift
+	printf "%s: ${fmt}" "${NAME}" "${@}" >&2
+	exit 1
 }
 
 for FILE in ${@}; do
-    f="${TARGET_DIR}${FILE}"
-    if [ ! -e "${f}" ]; then
-        error "%s: No such file or directory\n" "${FILE}"
-    fi
+	f="${TARGET_DIR}${FILE}"
+	if [ ! -e "${f}" ]; then
+		error "%s: No such file or directory\n" "${FILE}"
+	fi
 	if [ -d "${f}" ]; then
 		error "%s: Is a directory\n" "${FILE}"
 	fi

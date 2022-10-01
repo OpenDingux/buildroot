@@ -6,8 +6,8 @@ README_FILES="${QEMU_BOARD_DIR}/*/readme.txt"
 START_QEMU_SCRIPT="${BINARIES_DIR}/start-qemu.sh"
 
 if [[ "${DEFCONFIG_NAME}" =~ ^"qemu_*" ]]; then
-    # Not a Qemu defconfig, can't test.
-    exit 0
+	# Not a Qemu defconfig, can't test.
+	exit 0
 fi
 
 # Search for "# qemu_*_defconfig" tag in all readme.txt files.
@@ -15,8 +15,8 @@ fi
 QEMU_CMD_LINE=$(sed -r ':a; /\\$/N; s/\\\n//; s/\t/ /; ta; /# '${DEFCONFIG_NAME}'$/!d; s/#.*//' ${README_FILES})
 
 if [ -z "${QEMU_CMD_LINE}" ]; then
-    # No Qemu cmd line found, can't test.
-    exit 0
+	# No Qemu cmd line found, can't test.
+	exit 0
 fi
 
 # Remove output/images path since the script will be in
@@ -32,13 +32,13 @@ QEMU_CMD_LINE="$(sed -r -e 's/^.*(qemu-system-)/\1/' <<<"${QEMU_CMD_LINE}")"
 
 # Disable graphical output and redirect serial I/Os to console
 case ${DEFCONFIG_NAME} in
-  (qemu_sh4eb_r2d_defconfig|qemu_sh4_r2d_defconfig)
-    # Special case for SH4
-    SERIAL_ARGS="-serial stdio -display none"
-    ;;
-  (*)
-    SERIAL_ARGS="-nographic"
-    ;;
+	(qemu_sh4eb_r2d_defconfig|qemu_sh4_r2d_defconfig)
+		# Special case for SH4
+		SERIAL_ARGS="-serial stdio -display none"
+		;;
+	(*)
+		SERIAL_ARGS="-nographic"
+		;;
 esac
 
 cat <<-_EOF_ > "${START_QEMU_SCRIPT}"
@@ -48,9 +48,9 @@ cat <<-_EOF_ > "${START_QEMU_SCRIPT}"
 	cd \${BINARIES_DIR}
 
 	if [ "\${1}" = "serial-only" ]; then
-	    EXTRA_ARGS='${SERIAL_ARGS}'
+		EXTRA_ARGS='${SERIAL_ARGS}'
 	else
-	    EXTRA_ARGS='${DEFAULT_ARGS}'
+		EXTRA_ARGS='${DEFAULT_ARGS}'
 	fi
 
 	export PATH="${HOST_DIR}/bin:\${PATH}"
