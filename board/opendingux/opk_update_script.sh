@@ -18,7 +18,7 @@ Do you want to update now?"
 
 UP_TO_DATE=yes
 
-if [ -f "$DATE_FILE" ] ; then
+if [ -f "$DATE_FILE" ]; then
 	DATE="`cat $DATE_FILE`"
 	export DIALOGOPTS="--colors --no-shadow --backtitle \"OpenDingux update $DATE\""
 fi
@@ -26,7 +26,7 @@ fi
 echo "screen_color = (RED,RED,ON)" > /tmp/dialog_err.rc
 
 dialog --defaultno --yes-label 'Update' --no-label 'Cancel' --yesno "$DISCLAIMER" 0 0
-if [ $? -ne 0 ] ; then
+if [ $? -ne 0 ]; then
 	exit $?
 fi
 
@@ -41,7 +41,7 @@ else
 fi
 
 ERR=$?
-if [ $ERR -ne 0 ] ; then
+if [ $ERR -ne 0 ]; then
 	case $ERR in
 		2)
 			ERR_MSG="Failed to update rootfs!\nDo you have enough space available?"

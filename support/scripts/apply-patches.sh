@@ -34,7 +34,7 @@
 set -e
 
 silent=
-if [ "$1" = "-s" ] ; then
+if [ "$1" = "-s" ]; then
 	# add option to be used by the patch tool
 	silent=-s
 	shift
@@ -49,11 +49,11 @@ patchpattern=${@-*}
 # use a well defined sorting order
 export LC_COLLATE=C
 
-if [ ! -d "${builddir}" ] ; then
+if [ ! -d "${builddir}" ]; then
 	echo "Aborting.  '${builddir}' is not a directory."
 	exit 1
 fi
-if [ ! -d "${patchdir}" ] ; then
+if [ ! -d "${patchdir}" ]; then
 	echo "Aborting.  '${patchdir}' is not a directory."
 	exit 1
 fi
@@ -68,40 +68,51 @@ function apply_patch {
 	path="${1%%/}"
 	patch="${2}"
 	case "${path}" in
-		/*) ;;
-		*)  path="$PWD/${path}";;
+		/*)
+			;;
+		*)
+			path="$PWD/${path}"
+			;;
 	esac
 	if [ "$3" ]; then
 		type="series"; uncomp="cat"
 	else
 		case "$patch" in
 			*.gz)
-				type="gzip"; uncomp="gunzip -dc"; ;;
+				type="gzip"; uncomp="gunzip -dc";
+				;;
 			*.bz)
-				type="bzip"; uncomp="bunzip -dc"; ;;
+				type="bzip"; uncomp="bunzip -dc";
+				;;
 			*.bz2)
-				type="bzip2"; uncomp="bunzip2 -dc"; ;;
+				type="bzip2"; uncomp="bunzip2 -dc";
+				;;
 			*.xz)
-				type="xz"; uncomp="unxz -dc"; ;;
+				type="xz"; uncomp="unxz -dc";
+				;;
 			*.zip)
-				type="zip"; uncomp="unzip -d"; ;;
+				type="zip"; uncomp="unzip -d";
+				;;
 			*.Z)
-				type="compress"; uncomp="uncompress -c"; ;;
+				type="compress"; uncomp="uncompress -c";
+				;;
 			*.diff*)
-				type="diff"; uncomp="cat"; ;;
+				type="diff"; uncomp="cat";
+				;;
 			*.patch*)
-				type="patch"; uncomp="cat"; ;;
+				type="patch"; uncomp="cat";
+				;;
 			*)
 				echo "Unsupported file type for ${path}/${patch}, skipping";
 				return 0
 				;;
 		esac
 	fi
-	if [ -z "$silent" ] ; then
+	if [ -z "$silent" ]; then
 		echo ""
 		echo "Applying $patch using ${type}: "
 	fi
-	if [ ! -e "${path}/$patch" ] ; then
+	if [ ! -e "${path}/$patch" ]; then
 		echo "Error: missing patch file ${path}/$patch"
 		exit 1
 	fi
@@ -115,7 +126,7 @@ function apply_patch {
 	fi
 	echo "${path}/${patch}" >> ${builddir}/.applied_patches_list
 	${uncomp} "${path}/$patch" | patch -g0 -p1 -E --no-backup-if-mismatch -d "${builddir}" -t -N $silent
-	if [ $? != 0 ] ; then
+	if [ $? != 0 ]; then
 		echo "Patch failed!  Please fix ${patch}!"
 		exit 1
 	fi
@@ -128,7 +139,7 @@ function scan_patchdir {
 
 	# If there is a series file, use it instead of using ls sort order
 	# to apply patches. Skip line starting with a dash.
-	if [ -e "${path}/series" ] ; then
+	if [ -e "${path}/series" ]; then
 		# The format of a series file accepts a second field that is
 		# used to specify the number of directory components to strip
 		# when applying the patch, in the form -pN (N an integer >= 0)
@@ -140,7 +151,7 @@ function scan_patchdir {
 		done
 	else
 		for i in `cd $path; ls -d $patches 2> /dev/null` ; do
-			if [ -d "${path}/$i" ] ; then
+			if [ -d "${path}/$i" ]; then
 				scan_patchdir "${path}/$i"
 			elif echo "$i" | grep -q -E "\.tar(\..*)?$|\.tbz2?$|\.tgz$" ; then
 				unpackedarchivedir="$builddir/.patches-$(basename $i)-unpacked"
@@ -159,7 +170,7 @@ touch ${builddir}/.applied_patches_list
 scan_patchdir "$patchdir" "$patchpattern"
 
 # Check for rejects...
-if [ "`find $builddir/ '(' -name '*.rej' -o -name '.*.rej' ')' -print`" ] ; then
+if [ "`find $builddir/ '(' -name '*.rej' -o -name '.*.rej' ')' -print`" ]; then
 	echo "Aborting.  Reject files found."
 	exit 1
 fi

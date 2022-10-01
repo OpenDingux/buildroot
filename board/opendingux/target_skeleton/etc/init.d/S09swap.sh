@@ -21,7 +21,7 @@ SWAP_FILE=$(zramctl -a ${SWAP_COMPRESSOR} -s ${SWAP_FILE_MB}M -f)
 echo $SWAPPINESS > /proc/sys/vm/swappiness
 
 # Enable zswap if present in the kernel
-if [ -e "${SWAP_FILE}" ] ; then
+if [ -e "${SWAP_FILE}" ]; then
 	mkswap ${SWAP_FILE}
 	swapon ${SWAP_FILE}
 fi

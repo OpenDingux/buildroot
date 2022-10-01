@@ -7,7 +7,7 @@ mkdir -p /media/data
 BOOT_PARTITION=$(sed -n 's/.*root=\([[:alnum:]:\/]\+\).*/\1/p' /proc/cmdline)
 DATA_PARTITION=${BOOT_PARTITION::-1}$(expr ${BOOT_PARTITION: -1} \+ 1)
 
-if [ -b "$DATA_PARTITION" ] ; then
+if [ -b "$DATA_PARTITION" ]; then
 	# If present, use the partition following the system partition
 	# for the user data.
 
@@ -16,7 +16,7 @@ if [ -b "$DATA_PARTITION" ] ; then
 	DATA_FS=$(blkid_fs $DATA_PARTITION)
 
 	# Modprobe the module needed for the filesystem if needed.
-	if [ -z "$(grep "$DATA_FS" /proc/filesystems)" ] ; then
+	if [ -z "$(grep "$DATA_FS" /proc/filesystems)" ]; then
 		modprobe "$DATA_FS"
 	fi
 
@@ -25,7 +25,7 @@ if [ -b "$DATA_PARTITION" ] ; then
 
 	mount $DATA_PARTITION -t $DATA_FS -o nosuid,nodev /media/data
 
-elif [ "$BOOT_PARTITION" ] ; then
+elif [ "$BOOT_PARTITION" ]; then
 	# Booting with a merged system / data partition.
 	# Create a read-write mountpoint of the partition to
 	# /media/data.

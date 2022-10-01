@@ -76,20 +76,20 @@ check_prog_host "/usr/bin/file"
 
 # Check make
 MAKE=$(which make 2> /dev/null)
-if [ -z "$MAKE" ] ; then
+if [ -z "$MAKE" ]; then
 	echo
 	echo "You must install 'make' on your build machine";
 	exit 1;
 fi;
 MAKE_VERSION=$($MAKE --version 2>&1 | sed -e 's/^.* \([0-9\.]\)/\1/g' -e 's/[-\ ].*//g' -e '1q')
-if [ -z "$MAKE_VERSION" ] ; then
+if [ -z "$MAKE_VERSION" ]; then
 	echo
 	echo "You must install 'make' on your build machine";
 	exit 1;
 fi;
 MAKE_MAJOR=$(echo $MAKE_VERSION | sed -e "s/\..*//g")
 MAKE_MINOR=$(echo $MAKE_VERSION | sed -e "s/^$MAKE_MAJOR\.//g" -e "s/\..*//g" -e "s/[a-zA-Z].*//g")
-if [ $MAKE_MAJOR -lt 3 ] || [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 81 ] ; then
+if [ $MAKE_MAJOR -lt 3 ] || [ $MAKE_MAJOR -eq 3 -a $MAKE_MINOR -lt 81 ]; then
 	echo
 	echo "You have make '$MAKE_VERSION' installed.  GNU make >=3.81 is required"
 	exit 1;
@@ -97,10 +97,10 @@ fi;
 
 # Check host gcc
 COMPILER=$(which $HOSTCC_NOCCACHE 2> /dev/null)
-if [ -z "$COMPILER" ] ; then
+if [ -z "$COMPILER" ]; then
 	COMPILER=$(which cc 2> /dev/null)
 fi;
-if [ -z "$COMPILER" ] ; then
+if [ -z "$COMPILER" ]; then
 	echo
 	echo "You must install 'gcc' on your build machine";
 	exit 1;
@@ -108,14 +108,14 @@ fi;
 
 COMPILER_VERSION=$($COMPILER -v 2>&1 | sed -n '/^gcc version/p' |
 	sed -e 's/^gcc version \([0-9\.]\)/\1/g' -e 's/[-\ ].*//g' -e '1q')
-if [ -z "$COMPILER_VERSION" ] ; then
+if [ -z "$COMPILER_VERSION" ]; then
 	echo
 	echo "You must install 'gcc' on your build machine";
 	exit 1;
 fi;
 COMPILER_MAJOR=$(echo $COMPILER_VERSION | sed -e "s/\..*//g")
 COMPILER_MINOR=$(echo $COMPILER_VERSION | sed -e "s/^$COMPILER_MAJOR\.//g" -e "s/\..*//g")
-if [ $COMPILER_MAJOR -lt 4 -o $COMPILER_MAJOR -eq 4 -a $COMPILER_MINOR -lt 8 ] ; then
+if [ $COMPILER_MAJOR -lt 4 -o $COMPILER_MAJOR -eq 4 -a $COMPILER_MINOR -lt 8 ]; then
 	echo
 	echo "You have gcc '$COMPILER_VERSION' installed.  gcc >= 4.8 is required"
 	exit 1;
@@ -123,27 +123,27 @@ fi;
 
 # check for host CXX
 CXXCOMPILER=$(which $HOSTCXX_NOCCACHE 2> /dev/null)
-if [ -z "$CXXCOMPILER" ] ; then
+if [ -z "$CXXCOMPILER" ]; then
 	CXXCOMPILER=$(which c++ 2> /dev/null)
 fi
 
-if [ -z "$CXXCOMPILER" ] ; then
+if [ -z "$CXXCOMPILER" ]; then
 	echo
 	echo "You may have to install 'g++' on your build machine"
 fi
-if [ ! -z "$CXXCOMPILER" ] ; then
+if [ ! -z "$CXXCOMPILER" ]; then
 	CXXCOMPILER_VERSION=$($CXXCOMPILER -v 2>&1 | sed -n '/^gcc version/p' |
 		sed -e 's/^gcc version \([0-9\.]\)/\1/g' -e 's/[-\ ].*//g' -e '1q')
-	if [ -z "$CXXCOMPILER_VERSION" ] ; then
+	if [ -z "$CXXCOMPILER_VERSION" ]; then
 		echo
 		echo "You may have to install 'g++' on your build machine"
 	fi
 fi
 
-if [ -n "$CXXCOMPILER_VERSION" ] ; then
+if [ -n "$CXXCOMPILER_VERSION" ]; then
 	CXXCOMPILER_MAJOR=$(echo $CXXCOMPILER_VERSION | sed -e "s/\..*//g")
 	CXXCOMPILER_MINOR=$(echo $CXXCOMPILER_VERSION | sed -e "s/^$CXXCOMPILER_MAJOR\.//g" -e "s/\..*//g")
-	if [ $CXXCOMPILER_MAJOR -lt 4 -o $CXXCOMPILER_MAJOR -eq 4 -a $CXXCOMPILER_MINOR -lt 8 ] ; then
+	if [ $CXXCOMPILER_MAJOR -lt 4 -o $CXXCOMPILER_MAJOR -eq 4 -a $CXXCOMPILER_MINOR -lt 8 ]; then
 		echo
 		echo "You have g++ '$CXXCOMPILER_VERSION' installed.  g++ >= 4.8 is required"
 		exit 1
@@ -184,14 +184,14 @@ if test "${missing_progs}" = "yes" ; then
 fi
 
 PATCH_VERSION="$(patch -v 2>/dev/null | sed -n 's/^GNU patch \(.*\)/\1/p')"
-if [ -z "${PATCH_VERSION}" ] ; then
+if [ -z "${PATCH_VERSION}" ]; then
 	echo
 	echo "You must install GNU patch"
 	exit 1
 fi
 PATCH_MAJOR="$(echo "${PATCH_VERSION}" | cut -d . -f 1)"
 PATCH_MINOR="$(echo "${PATCH_VERSION}" | cut -d . -f 2)"
-if [ "${PATCH_MAJOR}" -lt 2 ] || [ "${PATCH_MAJOR}" -eq 2 -a "${PATCH_MINOR}" -lt 7 ] ; then
+if [ "${PATCH_MAJOR}" -lt 2 ] || [ "${PATCH_MAJOR}" -eq 2 -a "${PATCH_MINOR}" -lt 7 ]; then
 	echo
 	echo "You have GNU patch '${PATCH_VERSION}' installed.  GNU patch >= 2.7 is required"
 	exit 1;
@@ -213,7 +213,7 @@ fi
 if grep -q ^BR2_NEEDS_HOST_JAVA=y $BR2_CONFIG ; then
 	check_prog_host "java"
 	JAVA_GCJ=$(java -version 2>&1 | grep gcj)
-	if [ ! -z "$JAVA_GCJ" ] ; then
+	if [ ! -z "$JAVA_GCJ" ]; then
 		echo
 		echo "$JAVA_GCJ is not sufficient to compile your package selection."
 		echo "Please install an OpenJDK/IcedTea/Oracle Java."
@@ -273,28 +273,28 @@ required_perl_modules="$required_perl_modules ExtUtils::MakeMaker" # Used by hos
 required_perl_modules="$required_perl_modules Thread::Queue" # Used by host-automake
 
 if grep -q ^BR2_PACKAGE_MPV=y $BR2_CONFIG ; then
-    required_perl_modules="$required_perl_modules Math::BigInt"
-    required_perl_modules="$required_perl_modules Math::BigRat"
+	required_perl_modules="$required_perl_modules Math::BigInt"
+	required_perl_modules="$required_perl_modules Math::BigRat"
 fi
 
 if grep -q ^BR2_PACKAGE_WHOIS=y $BR2_CONFIG ; then
-    required_perl_modules="$required_perl_modules autodie"
+	required_perl_modules="$required_perl_modules autodie"
 fi
 
 if grep -q -E '^BR2_PACKAGE_(WEBKITGTK|WPEWEBKIT)=y' $BR2_CONFIG ; then
-    required_perl_modules="${required_perl_modules} JSON::PP"
+	required_perl_modules="${required_perl_modules} JSON::PP"
 fi
 
 # This variable will keep the modules that are missing in your system.
 missing_perl_modules=""
 
 for pm in $required_perl_modules ; do
-	if ! perl  -e "require $pm" > /dev/null 2>&1 ; then
+	if ! perl -e "require $pm" > /dev/null 2>&1 ; then
 		missing_perl_modules="$missing_perl_modules $pm"
 	fi
 done
 
-if [ -n "$missing_perl_modules" ] ; then
+if [ -n "$missing_perl_modules" ]; then
 	echo "Your Perl installation is not complete enough; at least the following"
 	echo "modules are missing:"
 	echo

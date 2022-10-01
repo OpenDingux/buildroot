@@ -6,8 +6,8 @@
 # Override these variables in sourced script(s) located
 # in /usr/lib/swupdate/conf.d or /etc/swupdate/conf.d
 # NOTE: There are substrings used in some swupdate commands which will
-#       need to be wrapped in a script to prevent tokenizing
-#       ( -p/-P post/pre cmds are good examples)
+#   need to be wrapped in a script to prevent tokenizing
+#   ( -p/-P post/pre cmds are good examples)
 SWUPDATE_ARGS="-v ${SWUPDATE_EXTRA_ARGS}"
 SWUPDATE_WEBSERVER_ARGS=""
 SWUPDATE_SURICATTA_ARGS=""
@@ -22,7 +22,7 @@ for f in `(test -d /usr/lib/swupdate/conf.d/ && ls -1 /usr/lib/swupdate/conf.d/;
 	fi
 done
 
-if [ "$SWUPDATE_WEBSERVER_ARGS" != "" -a  "$SWUPDATE_SURICATTA_ARGS" != "" ]; then
+if [ "$SWUPDATE_WEBSERVER_ARGS" != "" -a "$SWUPDATE_SURICATTA_ARGS" != "" ]; then
 	exec /usr/bin/swupdate $SWUPDATE_ARGS -w "$SWUPDATE_WEBSERVER_ARGS" -u "$SWUPDATE_SURICATTA_ARGS"
 elif [ "$SWUPDATE_WEBSERVER_ARGS" != "" ]; then
 	exec /usr/bin/swupdate $SWUPDATE_ARGS -w "$SWUPDATE_WEBSERVER_ARGS"

@@ -11,7 +11,7 @@ devkeys=$HOST_DIR/share/vboot/devkeys
 
 run() { echo "$@"; "$@"; }
 die() { echo "$@" >&2; exit 1; }
-test -f $BINARIES_DIR/Image  || \
+test -f $BINARIES_DIR/Image || \
 	die "No kernel image found"
 test -x $mkimage || \
 	die "No mkimage found (host-uboot-tools has not been built?)"

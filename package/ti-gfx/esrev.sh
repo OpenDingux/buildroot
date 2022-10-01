@@ -8,9 +8,9 @@ machine_id() { # return the machine ID
 		{ gsub(" ", "_", $2); print tolower($2) } ' </proc/cpuinfo
 }
 
-if [ "$(machine_id)" = "ti8168evm" ] ; then
+if [ "$(machine_id)" = "ti8168evm" ]; then
 	CPUTYPE=TI816x
-elif [ "$(machine_id)" = "am335xevm" ] ; then
+elif [ "$(machine_id)" = "am335xevm" ]; then
 	CPUTYPE=TI33XX
 else
 	CPUTYPE=$(devmem 0x4800244c | sed -e 's/0x00005C00/OMAP3503/' \

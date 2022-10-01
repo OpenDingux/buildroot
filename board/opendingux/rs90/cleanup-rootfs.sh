@@ -15,6 +15,6 @@ rm -rf $1/etc/udev/hwdb.d
 	done
 )
 
-if [ ! -h $1/usr/share/fonts/truetype ] ; then
+if [ ! -h $1/usr/share/fonts/truetype ]; then
 	ln -s . $1/usr/share/fonts/truetype
 fi

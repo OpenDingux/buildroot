@@ -14,11 +14,11 @@ stop)
 	;;
 status)
 	RET=1
-	if [ -r /var/run/pwswd.pid ] ; then
+	if [ -r /var/run/pwswd.pid ]; then
 		kill -0 `cat /var/run/pwswd.pid` 2>&1 >/dev/null
 		RET=$?
 	fi
-	if [ $RET -eq 0 ] ; then
+	if [ $RET -eq 0 ]; then
 		echo "pwswd is running"
 	else
 		echo "pwswd is NOT running"

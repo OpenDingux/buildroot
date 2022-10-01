@@ -40,7 +40,7 @@ for each in \
 	${BINARIES_DIR}/ubiboot-*.bin \
 	${BINARIES_DIR}/*.dtb
 do
-	if [ -r $each ] ; then
+	if [ -r $each ]; then
 		each_name=`basename $each`
 		cp -lf $each ${BUILD_DIR}/opk/${CONFIG}/${each_name}
 		each_sha1=${BUILD_DIR}/opk/${CONFIG}/${each_name}.sha1

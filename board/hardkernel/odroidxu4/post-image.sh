@@ -15,10 +15,9 @@ truncate -s 15360 ${BINARIES_DIR}/bl1.bin.hardkernel
 
 rm -rf "${GENIMAGE_TMP}"
 
-genimage                           \
-	--rootpath "${TARGET_DIR}"     \
-	--tmppath "${GENIMAGE_TMP}"    \
-	--inputpath "${BINARIES_DIR}"  \
+genimage \
+	--rootpath "${TARGET_DIR}" \
+	--tmppath "${GENIMAGE_TMP}" \
+	--inputpath "${BINARIES_DIR}" \
 	--outputpath "${BINARIES_DIR}" \
 	--config "${GENIMAGE_CFG}"
-

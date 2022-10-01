@@ -87,7 +87,7 @@ while true; do
 	esac
 done
 
-if [ "$#" -lt 1 ] ; then
+if [ "$#" -lt 1 ]; then
 	usage
 	exit
 fi
@@ -130,7 +130,7 @@ for MERGE_FILE in $MERGE_LIST ; do
 		grep -q -w $CFG $TMP_FILE || continue
 		PREV_VAL=$(grep -w $CFG $TMP_FILE)
 		NEW_VAL=$(grep -w $CFG $MERGE_FILE)
-		if [ "x$PREV_VAL" != "x$NEW_VAL" ] ; then
+		if [ "x$PREV_VAL" != "x$NEW_VAL" ]; then
 			echo Value of $CFG is redefined by fragment $MERGE_FILE:
 			echo Previous  value: $PREV_VAL
 			echo New value:       $NEW_VAL
@@ -155,7 +155,7 @@ fi
 # If we have an output dir, setup the O= argument, otherwise leave
 # it blank, since O=. will create an unnecessary ./source softlink
 OUTPUT_ARG=""
-if [ "$OUTPUT" != "." ] ; then
+if [ "$OUTPUT" != "." ]; then
 	OUTPUT_ARG="O=$OUTPUT"
 fi
 
@@ -171,7 +171,7 @@ for CFG in $(sed -n -e "$SED_CONFIG_EXP1" -e "$SED_CONFIG_EXP2" $TMP_FILE); do
 
 	REQUESTED_VAL=$(grep -w -e "$CFG" $TMP_FILE)
 	ACTUAL_VAL=$(grep -w -e "$CFG" "$KCONFIG_CONFIG")
-	if [ "x$REQUESTED_VAL" != "x$ACTUAL_VAL" ] ; then
+	if [ "x$REQUESTED_VAL" != "x$ACTUAL_VAL" ]; then
 		echo "Value requested for $CFG not in final .config"
 		echo "Requested value:  $REQUESTED_VAL"
 		echo "Actual value:     $ACTUAL_VAL"

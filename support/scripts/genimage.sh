@@ -44,8 +44,8 @@ ROOTPATH_TMP="$(mktemp -d)"
 rm -rf "${GENIMAGE_TMP}"
 
 genimage \
-	--rootpath "${ROOTPATH_TMP}"     \
-	--tmppath "${GENIMAGE_TMP}"    \
-	--inputpath "${BINARIES_DIR}"  \
+	--rootpath "${ROOTPATH_TMP}" \
+	--tmppath "${GENIMAGE_TMP}" \
+	--inputpath "${BINARIES_DIR}" \
 	--outputpath "${BINARIES_DIR}" \
 	--config "${GENIMAGE_CFG}"
