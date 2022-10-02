@@ -2,7 +2,7 @@
 
 candidate="$1" #ignored
 
-asciidoc=`which asciidoc`
+asciidoc=$(which asciidoc)
 if [ ! -x "$asciidoc" ]; then
 	# echo nothing: no suitable asciidoc found
 	exit 1
@@ -10,10 +10,10 @@ fi
 
 # Output of 'asciidoc --version' examples:
 # asciidoc 8.6.7
-version=`$asciidoc --version | cut -d\  -f2`
-major=`echo "$version" | cut -d. -f1`
-minor=`echo "$version" | cut -d. -f2`
-bugfix=`echo "$version" | cut -d. -f3`
+version=$($asciidoc --version | cut -d\  -f2)
+major=$(echo "$version" | cut -d. -f1)
+minor=$(echo "$version" | cut -d. -f2)
+bugfix=$(echo "$version" | cut -d. -f3)
 
 # To generate the manual, we need asciidoc >= 8.6.3
 major_min=8

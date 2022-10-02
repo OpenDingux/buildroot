@@ -58,7 +58,7 @@ rm -rf ${TARGET_DIR}/usr/lib/mono/xbuild-frameworks
 rm -rf ${TARGET_DIR}/etc/mono/2.0
 rm -rf ${TARGET_DIR}/etc/mono/4.0
 for i in ${TARGET_DIR}/usr/lib/mono/4.5/* ${TARGET_DIR}/usr/lib/mono/gac/* ; do
-	FILE=`basename $i`
+	FILE=$(basename $i)
 	case "$FILE" in
 		System.Core | System | System.Security | System.Xml | System.Configuration)
 			;;

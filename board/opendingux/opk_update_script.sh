@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd `dirname $0`
+cd $(dirname $0)
 
 DATE_FILE=./date.txt
 
@@ -19,7 +19,7 @@ Do you want to update now?"
 UP_TO_DATE=yes
 
 if [ -f "$DATE_FILE" ]; then
-	DATE="`cat $DATE_FILE`"
+	DATE="$(cat $DATE_FILE)"
 	export DIALOGOPTS="--colors --no-shadow --backtitle \"OpenDingux update $DATE\""
 fi
 

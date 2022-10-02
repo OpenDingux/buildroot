@@ -10,7 +10,7 @@ case "$1" in
 	start)
 		psplash_write "Loading sound volume..."
 		if [ -f $VOLUME_STATEFILE ]; then
-			/usr/bin/amixer set $CONTROL `cat $VOLUME_STATEFILE`
+			/usr/bin/amixer set $CONTROL $(cat $VOLUME_STATEFILE)
 		fi
 
 		MODEL=$(sed -n 's/\(.*\)ingenic.*/\1/p' /sys/firmware/devicetree/base/compatible)

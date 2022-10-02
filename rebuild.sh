@@ -29,7 +29,7 @@ nice make ${TARGET} BR2_SDK_PREFIX=${CONFIG}-toolchain O=output/${CONFIG}
 
 if [ "${TARGET}" = sdk ]; then
 	echo "Recompressing SDK to XZ..."
-	ARCHIVE_NAME=opendingux-${CONFIG}-toolchain.`date +'%Y-%m-%d'`
+	ARCHIVE_NAME=opendingux-${CONFIG}-toolchain.$(date +'%Y-%m-%d')
 	gzip -d -c output/${CONFIG}/images/${CONFIG}-toolchain.tar.gz | xz -T0 -9 > output/${CONFIG}/images/$ARCHIVE_NAME.tar.xz
 	rm output/${CONFIG}/images/${CONFIG}-toolchain.tar.gz
 

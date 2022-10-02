@@ -2,9 +2,9 @@
 
 candidate="$1"
 
-lzip=`which $candidate 2>/dev/null`
+lzip=$(which $candidate 2>/dev/null)
 if [ ! -x "$lzip" ]; then
-	lzip=`which lzip 2>/dev/null`
+	lzip=$(which lzip 2>/dev/null)
 	if [ ! -x "$lzip" ]; then
 		# echo nothing: no suitable lzip found
 		exit 1

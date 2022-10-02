@@ -26,8 +26,8 @@ test -f $rootfs || die "No rootfs image found"
 test -x $cgpt || die "cgpt not found (host-vboot-utils have not been built?)"
 
 # True file sizes in bytes
-kernelsize=`stat -t $kernel | cut -d\  -f2`
-rootfssize=`stat -t $rootfs | cut -d\  -f2`
+kernelsize=$(stat -t $kernel | cut -d\  -f2)
+rootfssize=$(stat -t $rootfs | cut -d\  -f2)
 
 # The card is partitioned in sectors of 8KB.
 # 4 sectors are reserved for MBR+GPT. Their actual size turns out

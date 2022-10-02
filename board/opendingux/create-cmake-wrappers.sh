@@ -6,7 +6,7 @@ for script in cmake ccmake ; do
 	(
 		echo '#!/bin/sh'
 		echo
-		echo "exec $script"' -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_TOOLCHAIN_FILE=`dirname $0`/../share/buildroot/toolchainfile.cmake $*'
+		echo "exec $script"' -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_TOOLCHAIN_FILE=$(dirname $0)/../share/buildroot/toolchainfile.cmake $*'
 	) > ${HOST_DIR}/usr/bin/${TARGET_TRIPLE}-${script}
 
 	chmod 0755 ${HOST_DIR}/usr/bin/${TARGET_TRIPLE}-${script}

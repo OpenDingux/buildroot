@@ -14,11 +14,11 @@ shift
 # a more recent version.
 
 for candidate in "${@}" ; do
-	python3=`which $candidate 2>/dev/null`
+	python3=$(which $candidate 2>/dev/null)
 	if [ ! -x "$python3" ]; then
 		continue
 	fi
-	version=`$python3 -V 2>&1 | awk '{ split($2, v, "."); print v[1] v[2] }'`
+	version=$($python3 -V 2>&1 | awk '{ split($2, v, "."); print v[1] v[2] }')
 
 	if [ $version -lt $version_min ]; then
 		# no suitable python3 found

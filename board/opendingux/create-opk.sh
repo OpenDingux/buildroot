@@ -1,6 +1,6 @@
 #!/bin/sh
 
-DATE=`date +%F`
+DATE=$(date +%F)
 CONFIG=$2
 
 mkdir -p ${BUILD_DIR}/opk/${CONFIG}/
@@ -41,7 +41,7 @@ for each in \
 	${BINARIES_DIR}/*.dtb
 do
 	if [ -r $each ]; then
-		each_name=`basename $each`
+		each_name=$(basename $each)
 		cp -lf $each ${BUILD_DIR}/opk/${CONFIG}/${each_name}
 		each_sha1=${BUILD_DIR}/opk/${CONFIG}/${each_name}.sha1
 		sha1sum $each | cut -d' ' -f1 > $each_sha1

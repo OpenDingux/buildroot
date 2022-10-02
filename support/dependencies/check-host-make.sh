@@ -17,11 +17,11 @@ make="$1"
 # GNU Make 4.2.1
 # GNU Make 4.0
 # GNU Make 3.81
-version=`$make --version 2>&1 | sed -e 's/^.* \([0-9\.]\)/\1/g' -e 's/[-\
-].*//g' -e '1q'`
+version=$($make --version 2>&1 | sed -e 's/^.* \([0-9\.]\)/\1/g' -e 's/[-\
+].*//g' -e '1q')
 
-major=`echo "$version" | cut -d. -f1`
-minor=`echo "$version" | cut -d. -f2`
+major=$(echo "$version" | cut -d. -f1)
+minor=$(echo "$version" | cut -d. -f2)
 
 if [ $major -lt $major_min ]; then
 	# echo nothing: no suitable make found

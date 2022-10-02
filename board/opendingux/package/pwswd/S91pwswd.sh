@@ -3,7 +3,7 @@
 case "$1" in
 start)
 	echo "Starting power slider daemon..."
-	/usr/bin/env HOME=`sed -n 's/od:x:1000:100::\(.*\):\/usr\/bin\/sh/\1/p' /etc/passwd` \
+	/usr/bin/env HOME=$(sed -n 's/od:x:1000:100::\(.*\):\/usr\/bin\/sh/\1/p' /etc/passwd) \
 		/sbin/start-stop-daemon -S -b -m -p /var/run/pwswd.pid \
 		-c od:users -x /usr/sbin/pwswd -- -e /dev/input/by-path/platform-gpio-keys-event
 	;;
@@ -15,7 +15,7 @@ stop)
 status)
 	RET=1
 	if [ -r /var/run/pwswd.pid ]; then
-		kill -0 `cat /var/run/pwswd.pid` 2>&1 >/dev/null
+		kill -0 $(cat /var/run/pwswd.pid) 2>&1 >/dev/null
 		RET=$?
 	fi
 	if [ $RET -eq 0 ]; then

@@ -145,12 +145,12 @@ function scan_patchdir {
 		# when applying the patch, in the form -pN (N an integer >= 0)
 		# We assume this field to always be -p1 whether it is present
 		# or missing.
-		series_patches="`grep -Ev "^#" ${path}/series | cut -d ' ' -f1 2> /dev/null`"
+		series_patches="$(grep -Ev "^#" ${path}/series | cut -d ' ' -f1 2> /dev/null)"
 		for i in $series_patches; do
 			apply_patch "$path" "$i" series
 		done
 	else
-		for i in `cd $path; ls -d $patches 2> /dev/null` ; do
+		for i in $(cd $path; ls -d $patches 2> /dev/null); do
 			if [ -d "${path}/$i" ]; then
 				scan_patchdir "${path}/$i"
 			elif echo "$i" | grep -q -E "\.tar(\..*)?$|\.tbz2?$|\.tgz$" ; then
@@ -170,7 +170,7 @@ touch ${builddir}/.applied_patches_list
 scan_patchdir "$patchdir" "$patchpattern"
 
 # Check for rejects...
-if [ "`find $builddir/ '(' -name '*.rej' -o -name '.*.rej' ')' -print`" ]; then
+if [ "$(find $builddir/ '(' -name '*.rej' -o -name '.*.rej' ')' -print)" ]; then
 	echo "Aborting.  Reject files found."
 	exit 1
 fi

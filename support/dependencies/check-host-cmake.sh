@@ -11,7 +11,7 @@ shift
 for candidate; do
 
 	# Try to locate the candidate. Discard it if not located.
-	cmake=`which "${candidate}" 2>/dev/null`
+	cmake=$(which "${candidate}" 2>/dev/null)
 	[ -n "${cmake}" ] || continue
 
 	# Extract version X.Y from versions in the form X.Y or X.Y.Z
@@ -24,7 +24,7 @@ for candidate; do
 	#   3.10.42 -> 3.10
 	# Discard the candidate if no version can be obtained
 	version="$(${cmake} --version \
-		|sed -r -e '/.* ([[:digit:]]+\.[[:digit:]]+).*$/!d;' \
+		| sed -r -e '/.* ([[:digit:]]+\.[[:digit:]]+).*$/!d;' \
 		-e 's//\1/'
 		)"
 	[ -n "${version}" ] || continue

@@ -1,8 +1,8 @@
 #!/bin/sh
 
-SPLASH=`grep splash /proc/cmdline`
-NB_START_SCRIPTS=`ls -1 /etc/init.d/S??* | wc -l `
-PERCENT_INCR=`expr 100 / $NB_START_SCRIPTS`
+SPLASH=$(grep splash /proc/cmdline)
+NB_START_SCRIPTS=$(ls -1 /etc/init.d/S??* | wc -l)
+PERCENT_INCR=$(expr 100 / $NB_START_SCRIPTS)
 PERCENT=0
 
 if [ -n "$SPLASH" -a -x /usr/bin/psplash ]; then
@@ -27,7 +27,7 @@ for i in /etc/init.d/S??* ;do
 
 	if [ -n "$SPLASH" -a -x /usr/bin/psplash ]; then
 		/usr/bin/psplash-write "PROGRESS $PERCENT"
-		PERCENT=`expr $PERCENT + $PERCENT_INCR`
+		PERCENT=$(expr $PERCENT + $PERCENT_INCR)
 	fi
 
 	case "$i" in
