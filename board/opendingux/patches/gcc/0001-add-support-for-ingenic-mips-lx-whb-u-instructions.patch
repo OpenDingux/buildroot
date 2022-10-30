@@ -1,4 +1,4 @@
-From 799df4affeaab3dff911378af7988ad072d60730 Mon Sep 17 00:00:00 2001
+From 49e1b02249362b2398237b41a07165c5f611e63d Mon Sep 17 00:00:00 2001
 From: Siarhei Volkau <lis8215@gmail.com>
 Date: Thu, 1 Sep 2022 10:19:49 +0300
 Subject: [PATCH] add support for ingenic mips lx<whb><u> instructions
@@ -15,11 +15,11 @@ NOTE: use it in conjunction with corresponding binutils/GAS patch.
 Signed-off-by: Siarhei Volkau <lis8215@gmail.com>
 ---
  gcc/config/mips/mips-dsp.md | 49 +++++++++++++++++++++++++++++++++++++
- gcc/config/mips/mips.c      | 29 ++++++++++++++++++++--
+ gcc/config/mips/mips.cc     | 29 ++++++++++++++++++++--
  2 files changed, 76 insertions(+), 2 deletions(-)
 
 diff --git a/gcc/config/mips/mips-dsp.md b/gcc/config/mips/mips-dsp.md
-index 5a5694f3f..6a9cfd000 100644
+index 0378f926b..18c297f98 100644
 --- a/gcc/config/mips/mips-dsp.md
 +++ b/gcc/config/mips/mips-dsp.md
 @@ -1124,6 +1124,55 @@
@@ -78,11 +78,11 @@ index 5a5694f3f..6a9cfd000 100644
  (define_insn "mips_l<GPR:size>x_<P:mode>"
    [(set (match_operand:GPR 0 "register_operand" "=d")
  	(mem:GPR (plus:P (match_operand:P 1 "register_operand" "d")
-diff --git a/gcc/config/mips/mips.c b/gcc/config/mips/mips.c
-index 315545966..33843d810 100644
---- a/gcc/config/mips/mips.c
-+++ b/gcc/config/mips/mips.c
-@@ -2673,7 +2673,31 @@ mips_lx_address_p (rtx addr, machine_mode mode)
+diff --git a/gcc/config/mips/mips.cc b/gcc/config/mips/mips.cc
+index e64928f41..f6140f5a0 100644
+--- a/gcc/config/mips/mips.cc
++++ b/gcc/config/mips/mips.cc
+@@ -2675,7 +2675,31 @@ mips_lx_address_p (rtx addr, machine_mode mode)
      return true;
    return false;
  }
@@ -96,7 +96,7 @@ index 315545966..33843d810 100644
 +    {
 +      rtx offset = XEXP (addr, 0);
 +      if (REG_P (offset))
-+          return true;
++	  return true;
 +      else if (GET_CODE (offset) == MULT
 +	  && REG_P (XEXP (offset, 0))
 +	  && CONST_INT_P (XEXP (offset, 1))) {
@@ -115,7 +115,7 @@ index 315545966..33843d810 100644
  /* Return true if a value at OFFSET bytes from base register BASE can be
     accessed using an unextended MIPS16 instruction.  MODE is the mode of
     the value.
-@@ -4197,7 +4221,8 @@ mips_rtx_costs (rtx x, machine_mode mode, int outer_code,
+@@ -4199,7 +4223,8 @@ mips_rtx_costs (rtx x, machine_mode mode, int outer_code,
  	}
        /* Check for a scaled indexed address.  */
        if (mips_lwxs_address_p (addr)
@@ -126,5 +126,5 @@ index 315545966..33843d810 100644
  	  *total = COSTS_N_INSNS (2);
  	  return true;
 -- 
-2.36.1
+2.35.1
 
