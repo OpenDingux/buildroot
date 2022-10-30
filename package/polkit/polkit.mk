@@ -4,49 +4,49 @@
 #
 ################################################################################
 
-POLKIT_VERSION = 0.119
-POLKIT_SITE = $(call github,aduskett,polkit-duktape,v$(POLKIT_VERSION))
+POLKIT_VERSION = a2bf5c9c83b6ae46cbd5c779d3055bff81ded683
+POLKIT_SITE = https://gitlab.freedesktop.org/polkit/polkit/-/archive/$(POLKIT_VERSION)
 POLKIT_LICENSE = GPL-2.0
 POLKIT_LICENSE_FILES = COPYING
 POLKIT_CPE_ID_VENDOR = polkit_project
-POLKIT_AUTORECONF = YES
 POLKIT_INSTALL_STAGING = YES
+
+# Fix was comitted in a2bf5c9c83b6ae46cbd5c779d3055bff81ded683
+POLKIT_IGNORE_CVES += CVE-2021-4034
 
 POLKIT_DEPENDENCIES = \
 	duktape libglib2 host-intltool expat $(TARGET_NLS_DEPENDENCIES)
 
-POLKIT_CONF_ENV = \
-	CXXFLAGS="$(TARGET_CXXFLAGS)" \
-	LIBS=$(TARGET_NLS_LIBS)
+POLKIT_SELINUX_MODULES = policykit
+
+POLKIT_LDFLAGS = $(TARGET_NLS_LIBS)
 
 POLKIT_CONF_OPTS = \
-	--with-os-type=unknown \
-	--disable-man-pages \
-	--disable-examples \
-	--disable-libelogind \
-	--disable-libsystemd-login \
-	--with-duktape
+	-Dman=false \
+	-Dexamples=false \
+	-Dsession_tracking=ConsoleKit \
+	-Djs_engine=duktape
 
 ifeq ($(BR2_PACKAGE_GOBJECT_INTROSPECTION),y)
-POLKIT_CONF_OPTS += --enable-introspection
+POLKIT_CONF_OPTS += -Dintrospection=true
 POLKIT_DEPENDENCIES += gobject-introspection
 else
-POLKIT_CONF_OPTS += --disable-introspection
+POLKIT_CONF_OPTS += -Dintrospection=false
 endif
 
 ifeq ($(BR2_PACKAGE_LINUX_PAM),y)
 POLKIT_DEPENDENCIES += linux-pam
-POLKIT_CONF_OPTS += --with-authfw=pam
+POLKIT_CONF_OPTS += -Dauthfw=pam
 else
-POLKIT_CONF_OPTS += --with-authfw=shadow
+POLKIT_CONF_OPTS += -Dauthfw=shadow
 endif
 
 # polkit.{its,loc} are needed for gvfs and must be installed in $(HOST_DIR)
 # and not $(STAGING_DIR)
 define POLKIT_INSTALL_ITS
-	$(INSTALL) -D -m 644 $(@D)/data/polkit.its \
+	$(INSTALL) -D -m 644 $(@D)/gettext/its/polkit.its \
 		$(HOST_DIR)/share/gettext/its/polkit.its
-	$(INSTALL) -D -m 644 $(@D)/data/polkit.loc \
+	$(INSTALL) -D -m 644 $(@D)/gettext/its/polkit.loc \
 		$(HOST_DIR)/share/gettext/its/polkit.loc
 endef
 POLKIT_POST_INSTALL_TARGET_HOOKS += POLKIT_INSTALL_ITS
@@ -72,4 +72,4 @@ define POLKIT_INSTALL_INIT_SYSV
 		$(TARGET_DIR)/etc/init.d/S50polkit
 endef
 
-$(eval $(autotools-package))
+$(eval $(meson-package))

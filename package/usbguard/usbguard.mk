@@ -4,10 +4,12 @@
 #
 ################################################################################
 
-USBGUARD_VERSION = 1.0.0
+USBGUARD_VERSION = 1.1.1
 USBGUARD_SITE = https://github.com/USBGuard/usbguard/releases/download/usbguard-$(USBGUARD_VERSION)
 USBGUARD_LICENSE = GPL-2.0+
 USBGUARD_LICENSE_FILES = LICENSE
+USBGUARD_CPE_ID_VENDOR = usbguard_project
+USBGUARD_SELINUX_MODULES = usbguard
 USBGUARD_CONF_OPTS = \
 	--with-bundled-catch \
 	--with-bundled-pegtl \

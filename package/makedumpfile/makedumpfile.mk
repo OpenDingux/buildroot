@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-MAKEDUMPFILE_VERSION = 1.6.9
+MAKEDUMPFILE_VERSION = 1.7.0
 MAKEDUMPFILE_SITE = $(call github,makedumpfile,makedumpfile,$(MAKEDUMPFILE_VERSION))
 MAKEDUMPFILE_DEPENDENCIES = bzip2 elfutils xz zlib
 MAKEDUMPFILE_LICENSE = GPL-2.0
@@ -17,6 +17,7 @@ MAKEDUMPFILE_TARGET = $(BR2_ARCH)
 endif
 
 MAKEDUMPFILE_MAKE_OPTS = \
+	CROSS= \
 	TARGET=$(MAKEDUMPFILE_TARGET) \
 	LINKTYPE=dynamic
 

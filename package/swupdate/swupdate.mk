@@ -4,37 +4,32 @@
 #
 ################################################################################
 
-SWUPDATE_VERSION = 2021.04
+SWUPDATE_VERSION = 2022.05
 SWUPDATE_SITE = $(call github,sbabic,swupdate,$(SWUPDATE_VERSION))
-SWUPDATE_LICENSE = GPL-2.0, GPL-2.0+ with OpenSSL exception, LGPL-2.1+, MIT, ISC, BSD-1-Clause, BSD-2-Clause, BSD-3-Clause, CC0-1.0, CC-BY-ND-4.0
+SWUPDATE_LICENSE = GPL-2.0, GPL-2.0+, LGPL-2.1+, MIT, ISC, BSD-1-Clause, BSD-3-Clause, CC0-1.0, CC-BY-SA-4.0, OFL-1.1
 SWUPDATE_LICENSE_FILES = LICENSES/BSD-1-Clause.txt \
-	LICENSES/BSD-2-Clause.txt \
 	LICENSES/BSD-3-Clause.txt \
 	LICENSES/CC0-1.0.txt \
-	LICENSES/CC-BY-ND-4.0.txt \
+	LICENSES/CC-BY-SA-4.0.txt \
 	LICENSES/GPL-2.0-only.txt \
 	LICENSES/GPL-2.0-or-later.txt \
 	LICENSES/ISC.txt \
 	LICENSES/LGPL-2.1-or-later.txt \
-	LICENSES/LicenseRef-OpenSSL-Exception.txt \
-	LICENSES/MIT.txt
+	LICENSES/MIT.txt \
+	LICENSES/OFL-1.1.txt
 
 # swupdate uses $CROSS-cc instead of $CROSS-gcc, which is not
 # available in all external toolchains, and use CC for linking. Ensure
 # TARGET_CC is used for both.
-SWUPDATE_MAKE_ENV = CC="$(TARGET_CC)" LD="$(TARGET_CC)"
+SWUPDATE_MAKE_ENV = CC="$(TARGET_CC)" LD="$(TARGET_CC)" SKIP_STRIP=y
 
 # swupdate bundles its own version of mongoose (version 6.16)
 
 ifeq ($(BR2_PACKAGE_E2FSPROGS),y)
 SWUPDATE_DEPENDENCIES += e2fsprogs
-endif
-
-ifeq ($(BR2_PACKAGE_EFIBOOTMGR),y)
-SWUPDATE_DEPENDENCIES += efibootmgr
-SWUPDATE_MAKE_ENV += HAVE_LIBEBGENV=y
+SWUPDATE_MAKE_ENV += HAVE_LIBEXT2FS=y
 else
-SWUPDATE_MAKE_ENV += HAVE_LIBEBGENV=n
+SWUPDATE_MAKE_ENV += HAVE_LIBEXT2FS=n
 endif
 
 ifeq ($(BR2_PACKAGE_JSON_C),y)
@@ -72,6 +67,13 @@ else
 SWUPDATE_MAKE_ENV += HAVE_LIBCURL=n
 endif
 
+ifeq ($(BR2_PACKAGE_UTIL_LINUX_LIBFDISK),y)
+SWUPDATE_DEPENDENCIES += util-linux
+SWUPDATE_MAKE_ENV += HAVE_LIBFDISK=y
+else
+SWUPDATE_MAKE_ENV += HAVE_LIBFDISK=n
+endif
+
 ifeq ($(BR2_PACKAGE_LIBGPIOD),y)
 SWUPDATE_DEPENDENCIES += libgpiod
 SWUPDATE_MAKE_ENV += HAVE_LIBGPIOD=y
@@ -104,6 +106,13 @@ else
 SWUPDATE_MAKE_ENV += HAVE_LUA=n
 endif
 
+ifeq ($(BR2_PACKAGE_MBEDTLS),y)
+SWUPDATE_DEPENDENCIES += mbedtls
+SWUPDATE_MAKE_ENV += HAVE_MBEDTLS=y
+else
+SWUPDATE_MAKE_ENV += HAVE_MBEDTLS=n
+endif
+
 ifeq ($(BR2_PACKAGE_MTD),y)
 SWUPDATE_DEPENDENCIES += mtd
 SWUPDATE_MAKE_ENV += HAVE_LIBMTD=y
@@ -113,21 +122,13 @@ SWUPDATE_MAKE_ENV += HAVE_LIBMTD=n
 SWUPDATE_MAKE_ENV += HAVE_LIBUBI=n
 endif
 
-# OpenSSL or mbedTLS
 ifeq ($(BR2_PACKAGE_OPENSSL),y)
 SWUPDATE_DEPENDENCIES += openssl
 SWUPDATE_MAKE_ENV += HAVE_LIBSSL=y
 SWUPDATE_MAKE_ENV += HAVE_LIBCRYPTO=y
-SWUPDATE_MAKE_ENV += HAVE_MBEDTLS=n
 else
 SWUPDATE_MAKE_ENV += HAVE_LIBSSL=n
 SWUPDATE_MAKE_ENV += HAVE_LIBCRYPTO=n
-ifeq ($(BR2_PACKAGE_MBEDTLS),y)
-SWUPDATE_DEPENDENCIES += mbedtls
-SWUPDATE_MAKE_ENV += HAVE_MBEDTLS=y
-else
-SWUPDATE_MAKE_ENV += HAVE_MBEDTLS=n
-endif
 endif
 
 ifeq ($(BR2_PACKAGE_P11_KIT),y)
@@ -139,13 +140,15 @@ endif
 
 ifeq ($(BR2_PACKAGE_SYSTEMD),y)
 SWUPDATE_DEPENDENCIES += systemd
-endif
-
-ifeq ($(BR2_PACKAGE_LIBUBOOTENV),y)
-SWUPDATE_DEPENDENCIES += libubootenv
-SWUPDATE_MAKE_ENV += HAVE_LIBUBOOTENV=y
+SWUPDATE_MAKE_ENV += HAVE_LIBSYSTEMD=y
+define SWUPDATE_SET_SYSTEMD
+	$(call KCONFIG_ENABLE_OPT,CONFIG_SYSTEMD)
+endef
 else
-SWUPDATE_MAKE_ENV += HAVE_LIBUBOOTENV=n
+SWUPDATE_MAKE_ENV += HAVE_LIBSYSTEMD=n
+define SWUPDATE_SET_SYSTEMD
+	$(call KCONFIG_DISABLE_OPT,CONFIG_SYSTEMD)
+endef
 endif
 
 ifeq ($(BR2_PACKAGE_WOLFSSL),y)
@@ -153,6 +156,13 @@ SWUPDATE_DEPENDENCIES += wolfssl
 SWUPDATE_MAKE_ENV += HAVE_WOLFSSL=y
 else
 SWUPDATE_MAKE_ENV += HAVE_WOLFSSL=n
+endif
+
+ifeq ($(BR2_PACKAGE_ZCHUNK),y)
+SWUPDATE_DEPENDENCIES += zchunk
+SWUPDATE_MAKE_ENV += HAVE_ZCK=y
+else
+SWUPDATE_MAKE_ENV += HAVE_ZCK=n
 endif
 
 ifeq ($(BR2_PACKAGE_ZEROMQ),y)
@@ -178,6 +188,19 @@ endif
 
 ifeq ($(BR2_PACKAGE_LIBRSYNC),y)
 SWUPDATE_DEPENDENCIES += librsync
+SWUPDATE_MAKE_ENV += HAVE_LIBRSYNC=y
+else
+SWUPDATE_MAKE_ENV += HAVE_LIBRSYNC=n
+endif
+
+ifeq ($(BR2_PACKAGE_SWUPDATE_WEBSERVER),y)
+define SWUPDATE_SET_WEBSERVER
+	$(call KCONFIG_ENABLE_OPT,CONFIG_WEBSERVER)
+endef
+else
+define SWUPDATE_SET_WEBSERVER
+	$(call KCONFIG_DISABLE_OPT,CONFIG_WEBSERVER)
+endef
 endif
 
 SWUPDATE_BUILD_CONFIG = $(@D)/.config
@@ -192,14 +215,17 @@ SWUPDATE_MAKE_OPTS = \
 
 define SWUPDATE_KCONFIG_FIXUP_CMDS
 	$(SWUPDATE_SET_LUA_VERSION)
+	$(SWUPDATE_SET_SYSTEMD)
+	$(SWUPDATE_SET_WEBSERVER)
 endef
 
 define SWUPDATE_BUILD_CMDS
-	$(TARGET_MAKE_ENV) $(SWUPDATE_MAKE_ENV) $(MAKE) $(SWUPDATE_MAKE_OPTS) -C $(@D)
+	$(TARGET_MAKE_ENV) $(SWUPDATE_MAKE_ENV) $(MAKE) -C $(@D) $(SWUPDATE_MAKE_OPTS)
 endef
 
 define SWUPDATE_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0755 $(@D)/swupdate $(TARGET_DIR)/usr/bin/swupdate
+	$(TARGET_MAKE_ENV) $(SWUPDATE_MAKE_ENV) $(MAKE) -C $(@D) \
+		$(SWUPDATE_MAKE_OPTS) DESTDIR=$(TARGET_DIR) install
 	$(if $(BR2_PACKAGE_SWUPDATE_INSTALL_WEBSITE), \
 		mkdir -p $(TARGET_DIR)/var/www/swupdate; \
 		cp -dpfr $(@D)/examples/www/v2/* $(TARGET_DIR)/var/www/swupdate)
@@ -213,23 +239,39 @@ $(error No Swupdate configuration file specified, check your BR2_PACKAGE_SWUPDAT
 endif
 endif
 
-ifeq ($(BR2_PACKAGE_SWUPDATE_INSTALL_WEBSITE),y)
+# Services and configs derived from meta-swupdate(MIT license)
+# https://github.com/sbabic/meta-swupdate/tree/master/recipes-support/swupdate/swupdate
 define SWUPDATE_INSTALL_COMMON
 	mkdir -p $(TARGET_DIR)/etc/swupdate/conf.d \
 		$(TARGET_DIR)/usr/lib/swupdate/conf.d
-	$(INSTALL) -D -m 755 package/swupdate/swupdate.sh \
+	$(INSTALL) -D -m 755 $(SWUPDATE_PKGDIR)/swupdate.sh \
 		$(TARGET_DIR)/usr/lib/swupdate/swupdate.sh
+	$(if $(BR2_PACKAGE_SWUPDATE_WEBSERVER), \
+		$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/10-mongoose-args \
+			$(TARGET_DIR)/usr/lib/swupdate/conf.d/10-mongoose-args)
 endef
 define SWUPDATE_INSTALL_INIT_SYSTEMD
 	$(SWUPDATE_INSTALL_COMMON)
-	$(INSTALL) -D -m 644 package/swupdate/swupdate.service \
+	$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/swupdate.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/swupdate.service
+	$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/swupdate.socket \
+		$(TARGET_DIR)/usr/lib/systemd/system/swupdate.socket
+	$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/swupdate-usb@.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/swupdate-usb@.service
+	$(if $(BR2_PACKAGE_SWUPDATE_USB), \
+		$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/swupdate-usb.rules \
+			$(TARGET_DIR)/lib/udev/rules.d/swupdate-usb.rules)
+	$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/swupdate-progress.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/swupdate-progress.service
+	$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/tmpfiles-swupdate.conf \
+		$(TARGET_DIR)/usr/lib/tmpfiles.d/tmpfiles-swupdate.conf
 endef
 define SWUPDATE_INSTALL_INIT_SYSV
 	$(SWUPDATE_INSTALL_COMMON)
-	$(INSTALL) -D -m 755 package/swupdate/S80swupdate \
+	$(INSTALL) -D -m 755 $(SWUPDATE_PKGDIR)/S80swupdate \
 		$(TARGET_DIR)/etc/init.d/S80swupdate
+	$(INSTALL) -D -m 644 $(SWUPDATE_PKGDIR)/90-start-progress \
+		$(TARGET_DIR)/usr/lib/swupdate/conf.d/90-start-progress
 endef
-endif
 
 $(eval $(kconfig-package))

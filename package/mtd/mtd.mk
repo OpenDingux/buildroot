@@ -13,6 +13,15 @@ MTD_CPE_ID_VENDOR = mtd-utils_project
 MTD_CPE_ID_PRODUCT = mtd-utils
 MTD_INSTALL_STAGING = YES
 
+MTD_LDFLAGS = $(TARGET_LDFLAGS)
+
+ifeq ($(BR2_PACKAGE_LIBEXECINFO),y)
+MTD_DEPENDENCIES += libexecinfo
+MTD_LDFLAGS += -lexecinfo
+endif
+
+MTD_CONF_ENV += LDFLAGS="$(MTD_LDFLAGS)"
+
 ifeq ($(BR2_PACKAGE_MTD_JFFS_UTILS),y)
 MTD_DEPENDENCIES += zlib lzo host-pkgconf
 MTD_CONF_OPTS += --with-jffs
@@ -47,9 +56,9 @@ MTD_CONF_OPTS += --disable-ubihealthd
 endif
 
 ifeq ($(BR2_PACKAGE_MTD_TESTS),y)
-MTD_CONF_OPTS += --enable-tests --enable-install-tests
+MTD_CONF_OPTS += --enable-tests
 else
-MTD_CONF_OPTS += --disable-tests --disable-install-tests
+MTD_CONF_OPTS += --disable-tests
 endif
 
 # If extended attributes are required, the acl package must

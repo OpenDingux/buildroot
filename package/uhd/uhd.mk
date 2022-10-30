@@ -15,11 +15,11 @@ UHD_INSTALL_STAGING = YES
 
 UHD_DEPENDENCIES = \
 	boost \
-	$(if $(BR2_PACKAGE_PYTHON),host-python,host-python3) \
+	host-python3 \
 	host-python-mako
 
 UHD_CONF_OPTS = \
-	-DPYTHON_EXECUTABLE=$(HOST_DIR)/bin/python \
+	-DPYTHON_EXECUTABLE=$(HOST_DIR)/bin/python3 \
 	-DRUNTIME_PYTHON_EXECUTABLE=/usr/bin/python \
 	-DENABLE_C_API=ON \
 	-DENABLE_DOXYGEN=OFF \
@@ -111,7 +111,7 @@ UHD_CONF_OPTS += -DENABLE_RFNOC=OFF
 endif
 
 ifeq ($(BR2_PACKAGE_UHD_PYTHON),y)
-UHD_DEPENDENCIES += host-python-numpy host-python3-requests \
+UHD_DEPENDENCIES += host-python-numpy host-python-requests \
 	python-numpy python-requests
 UHD_CONF_OPTS += -DENABLE_PYTHON_API=ON
 else

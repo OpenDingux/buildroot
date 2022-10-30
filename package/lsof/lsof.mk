@@ -4,8 +4,9 @@
 #
 ################################################################################
 
-LSOF_VERSION = 4.93.2
-LSOF_SITE = $(call github,lsof-org,lsof,$(LSOF_VERSION))
+LSOF_VERSION = 4.95.0
+LSOF_SOURCE = lsof_$(LSOF_VERSION).linux.tar.bz2
+LSOF_SITE = https://github.com/lsof-org/lsof/releases/download/$(LSOF_VERSION)
 LSOF_LICENSE = lsof license
 # License is repeated in each file, this is a relatively small one.
 # It is also defined in 00README, but that contains a lot of other cruft.
@@ -32,7 +33,8 @@ endif
 define LSOF_CONFIGURE_CMDS
 	(cd $(@D) ; \
 		echo n | $(TARGET_CONFIGURE_OPTS) DEBUG="$(TARGET_CFLAGS)" \
-		LSOF_INCLUDE="$(STAGING_DIR)/usr/include" LSOF_CFLAGS_OVERRIDE=1 \
+		LSOF_AR="$(TARGET_AR) cr" LSOF_CC="$(TARGET_CC)" \
+		LSOF_INCLUDE="$(STAGING_DIR)/usr/include" \
 		LINUX_CLIB=-DGLIBCV=2 LSOF_CFGL="$(TARGET_LDFLAGS)" \
 		./Configure linux)
 	$(LSOF_CONFIGURE_WCHAR_FIXUPS)
@@ -40,7 +42,7 @@ define LSOF_CONFIGURE_CMDS
 endef
 
 define LSOF_BUILD_CMDS
-	$(TARGET_MAKE_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) DEBUG="$(TARGET_CFLAGS)" -C $(@D)
+	$(TARGET_MAKE_ENV) $(MAKE) -C $(@D)
 endef
 
 define LSOF_INSTALL_TARGET_CMDS
