@@ -5,7 +5,7 @@ if [ $# -ne 1 ] ; then
 	exit 1
 fi
 
-$(sed -n 's/.*root=\([[:alnum:]:\/]\+\).*rootfstype=\([[:alpha:]]\+\).*/export SYSPART=\1\nexport SYSPART_TYPE=\2/p' /proc/cmdline)
+`sed -n 's/.*root=\([[:alnum:]:\/]\+\).*rootfstype=\([[:alpha:]]\+\).*/export SYSPART=\1\nexport SYSPART_TYPE=\2/p' /proc/cmdline`
 
 # Old OpenDingux firmwares did not pass valid root/rootfstype params.
 # Hardcode here the setting they used.
@@ -15,29 +15,29 @@ $(sed -n 's/.*root=\([[:alnum:]:\/]\+\).*rootfstype=\([[:alpha:]]\+\).*/export S
 HWVARIANT_BL=""
 HWVARIANT_DT=""
 
-HWVARIANT_CMDLINE="$(sed -n 's/.*hwvariant=\([[:alnum:]_]\+\).*/\1/p' /proc/cmdline)"
+HWVARIANT_CMDLINE="`sed -n 's/.*hwvariant=\([[:alnum:]_]\+\).*/\1/p' /proc/cmdline`"
 
 if [ -e /sys/firmware/devicetree/base/compatible ] ; then
-	MODEL=$(sed -n 's/\(.*\)ingenic.*/\1/p' /sys/firmware/devicetree/base/compatible)
+	MODEL=`sed -n 's/\(.*\)ingenic.*/\1/p' /sys/firmware/devicetree/base/compatible`
 	if [ -e /sys/firmware/devicetree/base/model ] ; then
-		HWVARIANT=$(cat /sys/firmware/devicetree/base/model)
+		HWVARIANT=`cat /sys/firmware/devicetree/base/model`
 	fi
 elif [ "$HWVARIANT_CMDLINE" = "rg350" ] ; then
-	if [ "$(uname -v)" = "#227 Tue Jul 20 11:36:58 CST 2021" ] ; then
+	if [ "`uname -v`" = "#227 Tue Jul 20 11:36:58 CST 2021" ] ; then
 		MODEL=ylm,rg300x
-	elif [ "$(uname -v)" = "#128 Fri May 29 11:19:07 CST 2020" ] ; then
+	elif [ "`uname -v`" = "#128 Fri May 29 11:19:07 CST 2020" ] ; then
 		MODEL=ylm,rg280m
-	elif [ "$(uname -v)" = "#171 Tue Jun 30 18:36:05 CST 2020" ] ; then
+	elif [ "`uname -v`" = "#171 Tue Jun 30 18:36:05 CST 2020" ] ; then
 		MODEL=ylm,rg280v
-	elif [ "$(uname -v)" = "#2 Sat Mar 28 16:19:20 CST 2020" ] ; then
+	elif [ "`uname -v`" = "#2 Sat Mar 28 16:19:20 CST 2020" ] ; then
 		MODEL=wolsen,pocketgo2v2
 	elif [ -r /sys/devices/platform/jz-lcd.0/graphics/fb0/modes -a \
-		"$(grep '640x480' /sys/devices/platform/jz-lcd.0/graphics/fb0/modes)" ] ; then
+		"`grep '640x480' /sys/devices/platform/jz-lcd.0/graphics/fb0/modes`" ] ; then
 		MODEL=ylm,rg350m
 	else
 		MODEL=ylm,rg350
 	fi
-elif [ "$(uname -v)" = "#35 Thu Sep 26 23:15:49 CST 2019" ] ; then
+elif [ "`uname -v`" = "#35 Thu Sep 26 23:15:49 CST 2019" ] ; then
 	MODEL=wolsen,pocketgo2
 else
 	case "$HWVARIANT_CMDLINE" in
@@ -53,7 +53,7 @@ else
 fi
 
 # Default to SYSDEV=/dev/mmcblk0
-SYSDEV=$(echo $SYSPART |sed -n 's/\(\/dev\/mmcblk[0-9]\+\)p[0-9]\+/\1/p')
+SYSDEV=`echo $SYSPART |sed -n 's/\(\/dev\/mmcblk[0-9]\+\)p[0-9]\+/\1/p'`
 
 [ "$MODEL" = "retromini" ] && MODEL=ylm,rs90
 [ "$MODEL" = "ylm,rg280m" ] && MODEL=ylm,rg280m-v1.1
@@ -61,13 +61,13 @@ SYSDEV=$(echo $SYSPART |sed -n 's/\(\/dev\/mmcblk[0-9]\+\)p[0-9]\+/\1/p')
 case "$MODEL" in
 	ylm,rs90|ylm,pmp5|ylm,rg99)
 		HWVARIANT_BL="$HWVARIANT_CMDLINE"
-		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
+		HWVARIANT_DT=`echo $MODEL |cut -d',' -f2`
 		INSTALL_ON_NAND=Y
 		SYSDEV=/dev/mtd0
 		;;
 	ylm,rs97|ylm,rg300|wolsen,ldkv|wolsen,ldkh|ylm,papk3s)
 		HWVARIANT_BL="lepus"
-		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
+		HWVARIANT_DT=`echo $MODEL |cut -d',' -f2`
 		;;
 	qishenglong,gopher2)
 		HWVARIANT_BL="gopher2"
@@ -98,11 +98,11 @@ case "$MODEL" in
 		HWVARIANT_BL="rg350"
 		;;
 	wolsen,pocketgo2)
-		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
+		HWVARIANT_DT=`echo $MODEL |cut -d',' -f2`
 		HWVARIANT_BL="v20_mddr_512mb"
 		;;
 	anbernic,rg350|anbernic,rg350m|ylm,rg350|ylm,rg350m|ylm,rg280m-*|ylm,rg280v|ylm,rg300x)
-		HWVARIANT_DT=$(echo $MODEL |cut -d',' -f2)
+		HWVARIANT_DT=`echo $MODEL |cut -d',' -f2`
 		HWVARIANT_BL="rg350"
 		;;
 	*)
@@ -112,8 +112,8 @@ case "$MODEL" in
 esac
 
 MNT=/mnt/_system_update
-[ "$(grep kernel_bak /proc/cmdline)" ] && KERNEL_IS_BACKUP=Y
-[ "$(grep rootfs_bak /proc/cmdline)" ] && ROOTFS_IS_BACKUP=Y
+[ "`grep kernel_bak /proc/cmdline`" ] && KERNEL_IS_BACKUP=Y
+[ "`grep rootfs_bak /proc/cmdline`" ] && ROOTFS_IS_BACKUP=Y
 
 BOOTLD=$1/ubiboot-${HWVARIANT_BL}.bin
 KERNEL=$1/uzImage.bin
@@ -195,16 +195,16 @@ fi
 if [ -r $KERNEL ] ; then
 	echo -e "\nUpdating kernel..."
 
-	KERNEL_SIZE=$(wc -c $KERNEL |cut -d ' ' -f1)
-	DTB_SIZE=$(wc -c $DEVICETREE |cut -d ' ' -f1)
+	KERNEL_SIZE=`wc -c $KERNEL |cut -d ' ' -f1`
+	DTB_SIZE=`wc -c $DEVICETREE |cut -d ' ' -f1`
 
 	if [ "$INSTALL_ON_NAND" ] ; then
-		VOLUME_ID=$(ubinfo -d 0 -N kernel_bak |head -n1 |sed "s/.*\([[:digit:]]\+\) .*/\1/")
+		VOLUME_ID=`ubinfo -d 0 -N kernel_bak |head -n1 |sed "s/.*\([[:digit:]]\+\) .*/\1/"`
 		if [ "$KERNEL_IS_BACKUP" ] ; then
-			VOLUME_ID=$(expr 1 - $VOLUME_ID)
+			VOLUME_ID=`expr 1 - $VOLUME_ID`
 		fi
 
-		cat_file $KERNEL $DEVICETREE | ubiupdatevol /dev/ubi0_$VOLUME_ID -s $(expr $KERNEL_SIZE + $DTB_SIZE) -
+		cat_file $KERNEL $DEVICETREE | ubiupdatevol /dev/ubi0_$VOLUME_ID -s `expr $KERNEL_SIZE + $DTB_SIZE` -
 	else
 		cat_file $KERNEL $DEVICETREE > $MNT/new_uzImage.bin
 	fi
@@ -241,18 +241,18 @@ echo 3 > /proc/sys/vm/drop_caches
 
 if [ -r $ROOTFS -a -r ${ROOTFS}.sha1 ] ; then
 	echo -e "\nVerifying rootfs..."
-	ROOTFS_SHA1=$(cat_file $MNT/new-rootfs.squashfs |sha1sum |cut -d' ' -f1)
+	ROOTFS_SHA1=`cat_file $MNT/new-rootfs.squashfs |sha1sum |cut -d' ' -f1`
 
-	if [ "$ROOTFS_SHA1" != "$(cat ${ROOTFS}.sha1)" ] ; then
+	if [ "$ROOTFS_SHA1" != "`cat ${ROOTFS}.sha1`" ] ; then
 		handle_err 7
 	fi
 fi
 
 if [ -r $MININIT -a -r ${MININIT}.sha1 ] ; then
 	echo -e "\nVerifying mininit..."
-	MININIT_SHA1=$(cat_file $MNT/mininit-syspart-new |sha1sum |cut -d' ' -f1)
+	MININIT_SHA1=`cat_file $MNT/mininit-syspart-new |sha1sum |cut -d' ' -f1`
 
-	if [ "$MININIT_SHA1" != "$(cat ${MININIT}.sha1)" ] ; then
+	if [ "$MININIT_SHA1" != "`cat ${MININIT}.sha1`" ] ; then
 		handle_err 8
 	fi
 fi
@@ -261,35 +261,35 @@ if [ -r $KERNEL -a -r ${KERNEL}.sha1 ] ; then
 	echo -e "\nVerifying kernel..."
 
 	[ "$INSTALL_ON_NAND" ] && BLOCK_SIZE=4096 || BLOCK_SIZE=512
-	NB_BLOCKS=$(expr $KERNEL_SIZE \/ $BLOCK_SIZE)
-	LEFTOVER=$(expr $KERNEL_SIZE \% $BLOCK_SIZE)
+	NB_BLOCKS=`expr $KERNEL_SIZE \/ $BLOCK_SIZE`
+	LEFTOVER=`expr $KERNEL_SIZE \% $BLOCK_SIZE`
 
 	if [ "$INSTALL_ON_NAND" ] ; then
-		KERNEL_SHA1=$( ( dd if=/dev/ubi0_$VOLUME_ID ibs=$BLOCK_SIZE count=$NB_BLOCKS ; \
-			dd if=/dev/ubi0_$VOLUME_ID ibs=1 skip=$(expr $KERNEL_SIZE - $LEFTOVER) count=$LEFTOVER) 2>/dev/null \
+		KERNEL_SHA1=` ( dd if=/dev/ubi0_$VOLUME_ID ibs=$BLOCK_SIZE count=$NB_BLOCKS ; \
+			dd if=/dev/ubi0_$VOLUME_ID ibs=1 skip=\`expr $KERNEL_SIZE - $LEFTOVER\` count=$LEFTOVER) 2>/dev/null \
 			| cat_file_size $KERNEL_SIZE |sha1sum |cut -d' ' -f1 \
-		)
+		`
 	else
-		KERNEL_SHA1=$( ( dd if=$MNT/new_uzImage.bin ibs=$BLOCK_SIZE count=$NB_BLOCKS ; \
-			dd if=$MNT/new_uzImage.bin ibs=1 skip=$(expr $KERNEL_SIZE - $LEFTOVER) count=$LEFTOVER) 2>/dev/null \
+		KERNEL_SHA1=` ( dd if=$MNT/new_uzImage.bin ibs=$BLOCK_SIZE count=$NB_BLOCKS ; \
+			dd if=$MNT/new_uzImage.bin ibs=1 skip=`expr $KERNEL_SIZE - $LEFTOVER` count=$LEFTOVER) 2>/dev/null \
 			| cat_file_size $KERNEL_SIZE |sha1sum |cut -d' ' -f1 \
-		)
+		`
 	fi
 
-	if [ "$KERNEL_SHA1" != "$(cat ${KERNEL}.sha1)" ] ; then
+	if [ "$KERNEL_SHA1" != "`cat ${KERNEL}.sha1`" ] ; then
 		handle_err 9
 	fi
 
 	if [ -r ${DEVICETREE}.sha1 ] ; then
-		DTB_SRC_SHA1=$( cat ${DEVICETREE}.sha1 )
+		DTB_SRC_SHA1=`cat ${DEVICETREE}.sha1`
 	else
-		DTB_SRC_SHA1=$( sha1sum ${DEVICETREE} |cut -d' ' -f1 )
+		DTB_SRC_SHA1=`sha1sum ${DEVICETREE} |cut -d' ' -f1`
 	fi
 
 	if [ "$INSTALL_ON_NAND" ] ; then
-		DTB_SHA1=$( ( dd if=/dev/ubi0_$VOLUME_ID ibs=1 skip=$KERNEL_SIZE count=$DTB_SIZE) 2>/dev/null |sha1sum |cut -d' ' -f1 )
+		DTB_SHA1=`( dd if=/dev/ubi0_$VOLUME_ID ibs=1 skip=$KERNEL_SIZE count=$DTB_SIZE) 2>/dev/null |sha1sum |cut -d' ' -f1`
 	else
-		DTB_SHA1=$( ( dd if=$MNT/new_uzImage.bin ibs=1 skip=$KERNEL_SIZE count=$DTB_SIZE) 2>/dev/null |sha1sum |cut -d' ' -f1 )
+		DTB_SHA1=`( dd if=$MNT/new_uzImage.bin ibs=1 skip=$KERNEL_SIZE count=$DTB_SIZE) 2>/dev/null |sha1sum |cut -d' ' -f1`
 	fi
 
 	if [ "$DTB_SHA1" != "$DTB_SRC_SHA1" ] ; then
@@ -300,15 +300,15 @@ fi
 if [ -r $BOOTLD -a -r ${BOOTLD}.sha1 ] ; then
 	echo -e "\nVerifying bootloader..."
 
-	BOOTLD_SIZE=$(wc -c $BOOTLD |cut -d' ' -f1)
+	BOOTLD_SIZE=`wc -c $BOOTLD |cut -d' ' -f1`
 
 	if [ "$INSTALL_ON_NAND" ] ; then
-		BOOTLD_SHA1=$(nanddump -q -l $BOOTLD_SIZE $SYSDEV | cat_file_size $BOOTLD_SIZE |sha1sum |cut -d' ' -f1)
+		BOOTLD_SHA1=`nanddump -q -l $BOOTLD_SIZE $SYSDEV | cat_file_size $BOOTLD_SIZE |sha1sum |cut -d' ' -f1`
 	else
-		BOOTLD_SHA1=$(dd if=$SYSDEV ibs=1 skip=512 count=$BOOTLD_SIZE 2>/dev/null | cat_file_size $BOOTLD_SIZE |sha1sum |cut -d' ' -f1)
+		BOOTLD_SHA1=`dd if=$SYSDEV ibs=1 skip=512 count=$BOOTLD_SIZE 2>/dev/null | cat_file_size $BOOTLD_SIZE |sha1sum |cut -d' ' -f1`
 	fi
 
-	if [ "$BOOTLD_SHA1" != "$(cat ${BOOTLD}.sha1)" ] ; then
+	if [ "$BOOTLD_SHA1" != "`cat ${BOOTLD}.sha1`" ] ; then
 		handle_err 11
 	fi
 fi

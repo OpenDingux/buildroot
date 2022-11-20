@@ -18,13 +18,13 @@ fi
 wait_for_ipv6_default_route() {
 	printf "Waiting for IPv6 default route to appear"
 	while [ $IF_WAIT_DELAY -gt 0 ]; do
-		if [ -z "$(ip -6 route list | grep default)" ]; then
+		if [ -z "`ip -6 route list | grep default`" ]; then
 			printf "\n"
 			return
 		fi
 		sleep 1
 		printf "."
-		: $((IF_WAIT_DELAY -= 1))
+		: IF_WAIT_DELAY=`expr $IF_WAIT_DELAY - 1`
 	done
 	printf " timeout!\n"
 }
@@ -35,7 +35,7 @@ case "$1" in
 
 		# drop info from this interface
 		# resolv.conf may be a symlink to /tmp/, so take care
-		TMPFILE=$(mktemp)
+		TMPFILE=`mktemp`
 		grep -vE "# $interface\$" $RESOLV_CONF > $TMPFILE
 		cat $TMPFILE > $RESOLV_CONF
 		rm -f $TMPFILE
@@ -73,7 +73,7 @@ case "$1" in
 
 		# drop info from this interface
 		# resolv.conf may be a symlink to /tmp/, so take care
-		TMPFILE=$(mktemp)
+		TMPFILE=`mktemp`
 		grep -vE "# $interface\$" $RESOLV_CONF > $TMPFILE
 		cat $TMPFILE > $RESOLV_CONF
 		rm -f $TMPFILE

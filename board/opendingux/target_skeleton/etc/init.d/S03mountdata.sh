@@ -4,8 +4,8 @@
 
 mkdir -p /media/data
 
-BOOT_PARTITION=$(sed -n 's/.*root=\([[:alnum:]:\/]\+\).*/\1/p' /proc/cmdline)
-DATA_PARTITION=${BOOT_PARTITION::-1}$(expr ${BOOT_PARTITION: -1} \+ 1)
+BOOT_PARTITION=`sed -n 's/.*root=\([[:alnum:]:\/]\+\).*/\1/p' /proc/cmdline`
+DATA_PARTITION=${BOOT_PARTITION::-1}`expr ${BOOT_PARTITION: -1} \+ 1`
 
 if [ -b "$DATA_PARTITION" ] ; then
 	# If present, use the partition following the system partition
@@ -13,10 +13,10 @@ if [ -b "$DATA_PARTITION" ] ; then
 
 	psplash_write "Mounting $DATA_PARTITION..."
 
-	DATA_FS=$(blkid_fs $DATA_PARTITION)
+	DATA_FS=`blkid_fs $DATA_PARTITION`
 
 	# Modprobe the module needed for the filesystem if needed.
-	if [ -z "$(grep "$DATA_FS" /proc/filesystems)" ] ; then
+	if [ -z "`grep "$DATA_FS" /proc/filesystems`" ] ; then
 		modprobe "$DATA_FS"
 	fi
 

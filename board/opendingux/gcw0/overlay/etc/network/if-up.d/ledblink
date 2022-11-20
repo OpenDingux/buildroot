@@ -23,7 +23,7 @@ fi
 BATTERY_LEVEL=`cat $BATTERY/voltage_now`
 BATTERY_MIN=`cat $BATTERY/voltage_min_design`
 BATTERY_MAX=`cat $BATTERY/voltage_max_design`
-BATTERY_LEVEL=$(expr $(expr $BATTERY_LEVEL - $BATTERY_MIN) \* 100 / $(expr $BATTERY_MAX - $BATTERY_MIN))
+BATTERY_LEVEL=`expr \`expr $BATTERY_LEVEL - $BATTERY_MIN\` \* 100 / \`expr $BATTERY_MAX - $BATTERY_MIN\``
 
 # Don't change the blinking mode if the battery level is
 # low, so that the low battery level warning will work
