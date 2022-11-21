@@ -1,0 +1,5 @@
+config BR2_PACKAGE_OD_MODEL
+	bool "OpenDingux device model reporter"
+	help
+	  This command-line executable reports the device model.
+
