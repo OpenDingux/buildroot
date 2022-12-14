@@ -1,0 +1,20 @@
+config BR2_PACKAGE_COMMANDER
+	bool "commander"
+	select BR2_PACKAGE_SDL
+	select BR2_PACKAGE_SDL_GFX
+	select BR2_PACKAGE_SDL_IMAGE
+	select BR2_PACKAGE_SDL_TTF
+	select BR2_PACKAGE_DEJAVU
+	select BR2_PACKAGE_FONTS_DROID
+	help
+	  Two-pane file manager in the style of Norton Commander.
+
+	  https://github.com/od-contrib/commander
+
+if BR2_PACKAGE_COMMANDER
+
+config BR2_PACKAGE_COMMANDER_PLATFORM
+	string "Target platform: for key bindings, default folder locations, and the manual"
+	default "gcw0"
+
+endif
