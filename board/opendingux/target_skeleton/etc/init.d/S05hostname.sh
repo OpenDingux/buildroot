@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[ -z "$1" ] || [ "x$1" = "xstart" ] || exit 0
+[ -z "$1" ] || [ "x$1" = "xstart" ] || ${EXIT:-exit} 0
 
 IFS= read -r -d $'\0' MODEL </sys/firmware/devicetree/base/compatible
 

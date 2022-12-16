@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[ -z "$1" ] || [ "x$1" = "xstart" ] || exit 0
+[ -z "$1" ] || [ "x$1" = "xstart" ] || ${EXIT:-exit} 0
 
 psplash_write "Setup permissions..."
 
