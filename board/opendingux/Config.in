@@ -1,6 +1,7 @@
 menu "OpenDingux packages"
 
 	source "$BR2_EXTERNAL_OPENDINGUX_PATH/package/bennugd/Config.in"
+	source "$BR2_EXTERNAL_OPENDINGUX_PATH/package/flac13/Config.in"
 	source "$BR2_EXTERNAL_OPENDINGUX_PATH/package/fonts-droid/Config.in"
 	source "$BR2_EXTERNAL_OPENDINGUX_PATH/package/gcwconnect/Config.in"
 	source "$BR2_EXTERNAL_OPENDINGUX_PATH/package/gl4es/Config.in"
