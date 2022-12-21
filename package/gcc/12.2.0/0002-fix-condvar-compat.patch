@@ -1,0 +1,33 @@
+--- a/libstdc++-v3/src/c++11/compatibility-condvar.cc
++++ b/libstdc++-v3/src/c++11/compatibility-condvar.cc
+@@ -67,6 +67,22 @@ _GLIBCXX_END_NAMESPACE_VERSION
+     && defined(_GLIBCXX_HAVE_SYMVER_SYMBOL_RENAMING_RUNTIME_SUPPORT)
+ namespace __gnu_cxx _GLIBCXX_VISIBILITY(default)
+ {
++namespace
++{
++  std::__condvar std::condition_variable::* __base_member;
++
++  template<std::__condvar std::condition_variable::*X>
++    struct cracker
++    {
++      static std::__condvar std::condition_variable::* value;
++    };
++  template<std::__condvar std::condition_variable::*X>
++    std::__condvar std::condition_variable::*
++      cracker<X>::value = __base_member = X;
++
++  template class cracker<&std::condition_variable::_M_cond>;
++}
++
+ struct __nothrow_wait_cv : std::condition_variable
+ {
+   void wait(std::unique_lock<std::mutex>&) noexcept;
+@@ -76,7 +92,7 @@ __attribute__((used))
+ void
+ __nothrow_wait_cv::wait(std::unique_lock<std::mutex>& lock) noexcept
+ {
+-  this->condition_variable::wait(lock);
++  (this->*__base_member).wait(*lock.mutex());
+ }
+ } // namespace __gnu_cxx
