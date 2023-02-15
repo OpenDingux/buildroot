@@ -14,6 +14,14 @@ VENDOR=OpenDingux
 PRODUCT=`grep machine /proc/cpuinfo |sed 's/.*: //'`
 UDC_NAME=`ls -1 /sys/class/udc |head -n1`
 
+gen_hex() {
+	printf %02X $(expr $RANDOM % 256 )
+}
+
+gen_mac() {
+	echo ${1}:$(gen_hex):$(gen_hex):$(gen_hex):$(gen_hex):$(gen_hex)
+}
+
 usb_disable() {
 	if [ -r /run/umtprd.pid ] ; then
 		start-stop-daemon -K -p /run/umtprd.pid
@@ -24,13 +32,17 @@ usb_disable() {
 }
 
 usb_start() {
-	if [ "$1" ] ; then
-		USB_MODE=$1
-	elif [ -r /usr/local/etc/usb.conf ] ; then
+	if [ -r /usr/local/etc/usb.conf ] ; then
 		. /usr/local/etc/usb.conf
 	fi
 
+	if [ "$1" ] ; then
+		USB_MODE=$1
+	fi
+
 	[ -z "$USB_MODE" ] && USB_MODE=mtp
+	[ -z "${HOST_MAC_ADDRESS}" ] && HOST_MAC_ADDRESS=$(gen_mac 02)
+	[ -z "${DEVICE_MAC_ADDRESS}" ] && DEVICE_MAC_ADDRESS=$(gen_mac 06)
 
 	cd /sys/kernel/config/usb_gadget
 
@@ -65,6 +77,8 @@ usb_start() {
 		echo 0x0525 > mtp/idVendor  # NetChip
 		echo 0xa4a2 > mtp/idProduct # Ethernet/RNDIS Gadget
 		echo rndis > mtp/configs/c.1/strings/0x409/configuration
+		echo ${HOST_MAC_ADDRESS} > mtp/functions/rndis.net/host_addr
+		echo ${DEVICE_MAC_ADDRESS} > mtp/functions/rndis.net/dev_addr
 
 		ln -s mtp/configs/c.1 mtp/os_desc/
 		ln -s mtp/functions/rndis.net mtp/configs/c.1/rndis.net
@@ -103,11 +117,15 @@ usb_start() {
 		echo 0x049f > mtp/idVendor
 		echo 0x505a > mtp/idProduct
 		echo cdc > mtp/configs/c.1/strings/0x409/configuration
+		echo ${HOST_MAC_ADDRESS} > mtp/functions/ecm.net/host_addr
+		echo ${DEVICE_MAC_ADDRESS} > mtp/functions/ecm.net/dev_addr
 		ln -s mtp/functions/ecm.net mtp/configs/c.1/ecm.net
 	fi
 
 	echo "${UDC_NAME}" > /sys/kernel/config/usb_gadget/mtp/UDC
 	echo "USB_MODE=$(cat mtp/configs/c.1/strings/0x409/configuration)" > /usr/local/etc/usb.conf
+	echo "HOST_MAC_ADDRESS=${HOST_MAC_ADDRESS}" >> /usr/local/etc/usb.conf
+	echo "DEVICE_MAC_ADDRESS=${DEVICE_MAC_ADDRESS}" >> /usr/local/etc/usb.conf
 }
 
 usb_stop() {
