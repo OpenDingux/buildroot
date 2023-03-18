@@ -45,9 +45,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: output/ccache/${{ matrix.target }}
-        key: ${ { matrix.config.name } }-ccache-${ { steps.ccache_cache_timestamp.outputs.timestamp } }
+        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
         restore-keys: |
-          ${ { matrix.config.name } }-ccache-
+          ${{ matrix.config.name }}-ccache-
     - name: build
       run: ./rebuild.sh
       env:
