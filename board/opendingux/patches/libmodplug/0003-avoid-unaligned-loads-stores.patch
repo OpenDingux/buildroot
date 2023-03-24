@@ -1,0 +1,1125 @@
+From 7bdfbba6f2cd6bbedeead73a6085c0b28a606fa5 Mon Sep 17 00:00:00 2001
+From: Ozkan Sezer <sezeroz@gmail.com>
+Date: Fri, 24 Feb 2023 21:56:20 +0300
+Subject: [PATCH 3/4] avoid unaligned loads / stores
+
+Signed-off-by: Gleb Mazovetskiy <glex.spb@gmail.com>
+---
+ src/libmodplug/sndfile.h |  21 ++++-
+ src/load_amf.cpp         |  18 ++--
+ src/load_ams.cpp         |  12 +--
+ src/load_dmf.cpp         |   6 +-
+ src/load_it.cpp          |  30 +++----
+ src/load_med.cpp         |   6 +-
+ src/load_mod.cpp         |   2 +-
+ src/load_mt2.cpp         |  18 ++--
+ src/load_psm.cpp         |  10 +--
+ src/load_s3m.cpp         |   2 +-
+ src/load_umx.cpp         |  35 ++++----
+ src/load_wav.cpp         |   6 +-
+ src/load_xm.cpp          |  26 +++---
+ src/mmcmp.cpp            | 182 +++++++++++++++++----------------------
+ src/sndfile.cpp          |  69 ++++++++-------
+ 15 files changed, 218 insertions(+), 225 deletions(-)
+
+diff --git a/src/libmodplug/sndfile.h b/src/libmodplug/sndfile.h
+index 1888500..7456b4d 100644
+--- a/src/libmodplug/sndfile.h
++++ b/src/libmodplug/sndfile.h
+@@ -804,9 +804,6 @@ public:
+ };
+ 
+ 
+-// inline DWORD BigEndian(DWORD x) { return ((x & 0xFF) << 24) | ((x & 0xFF00) << 8) | ((x & 0xFF0000) >> 8) | ((x & 0xFF000000) >> 24); }
+-// inline WORD BigEndianW(WORD x) { return (WORD)(((x >> 8) & 0xFF) | ((x << 8) & 0xFF00)); }
+-
+ 
+ //////////////////////////////////////////////////////////
+ // WAVE format information
+@@ -958,6 +955,24 @@ int _muldiv(long a, long b, long c);
+ int _muldivr(long a, long b, long c);
+ 
+ 
++// Functions to read 16 and 32 bits endian-specific data and return in native format:
++
++inline WORD READ_LE16(LPCBYTE b) {
++	return (WORD)b[0] | ((WORD)b[1] << 8);
++}
++
++inline WORD READ_BE16(LPCBYTE b) {
++	return (WORD)b[1] | ((WORD)b[0] << 8);
++}
++
++inline DWORD READ_LE32(LPCBYTE b) {
++	return (DWORD)b[0] | ((DWORD)b[1] << 8) | ((DWORD)b[2] << 16) | ((DWORD)b[3] << 24);
++}
++
++inline DWORD READ_BE32(LPCBYTE b) {
++	return (DWORD)b[3] | ((DWORD)b[2] << 8) | ((DWORD)b[1] << 16) | ((DWORD)b[0] << 24);
++}
++
+ // Byte swapping functions from the GNU C Library and libsdl
+ 
+ /* Swap bytes in 16 bit value.  */
+diff --git a/src/load_amf.cpp b/src/load_amf.cpp
+index 89876af..2512c29 100644
+--- a/src/load_amf.cpp
++++ b/src/load_amf.cpp
+@@ -56,7 +56,7 @@ VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nChannels
+ //-------------------------------------------------------------------------------
+ {
+ 	UINT lastinstr = 0;
+-	UINT nTrkSize = bswapLE16(*(USHORT *)pTrack);
++	UINT nTrkSize = READ_LE16(pTrack);
+ 	nTrkSize += (UINT)pTrack[2] << 16;
+ 	pTrack += 3;
+ 	while (nTrkSize--)
+@@ -203,9 +203,9 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
+ 			psmp->nGlobalVol = 64;
+ 			if (psmp->nVolume > 0x40) psmp->nVolume = 0x40;
+ 			psmp->nVolume <<= 2;
+-			psmp->nLength = bswapLE32(*((LPDWORD)(lpStream+dwMemPos+25)));
+-			psmp->nLoopStart = bswapLE32(*((LPDWORD)(lpStream+dwMemPos+29)));
+-			psmp->nLoopEnd = psmp->nLoopStart + bswapLE32(*((LPDWORD)(lpStream+dwMemPos+33)));
++			psmp->nLength = READ_LE32(lpStream+dwMemPos+25);
++			psmp->nLoopStart = READ_LE32(lpStream+dwMemPos+29);
++			psmp->nLoopEnd = psmp->nLoopStart + READ_LE32(lpStream+dwMemPos+33);
+ 			if ((psmp->nLoopEnd > psmp->nLoopStart) && (psmp->nLoopEnd <= psmp->nLength))
+ 			{
+ 				psmp->uFlags = CHN_LOOP;
+@@ -319,7 +319,7 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
+ 			if (pfh->version >= 14)
+ 			{
+ 				if (dwMemPos + m_nChannels * sizeof(USHORT) + 2 > dwMemLength) return FALSE;
+-				PatternSize[iOrd] = bswapLE16(*(USHORT *)(lpStream+dwMemPos));
++				PatternSize[iOrd] = READ_LE16(lpStream+dwMemPos);
+ 				dwMemPos += 2;
+ 			} else
+ 			{
+@@ -348,12 +348,12 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
+ 		pins->nVolume = psh->volume * 4;
+ 		if (pfh->version >= 11)
+ 		{
+-			pins->nLoopStart = bswapLE32(*(DWORD *)(lpStream+dwMemPos));
+-			pins->nLoopEnd = bswapLE32(*(DWORD *)(lpStream+dwMemPos+4));
++			pins->nLoopStart = READ_LE32(lpStream+dwMemPos);
++			pins->nLoopEnd = READ_LE32(lpStream+dwMemPos+4);
+ 			dwMemPos += 8;
+ 		} else
+ 		{
+-			pins->nLoopStart = bswapLE16(*(WORD *)(lpStream+dwMemPos));
++			pins->nLoopStart = READ_LE16(lpStream+dwMemPos);
+ 			pins->nLoopEnd = pins->nLength;
+ 			dwMemPos += 2;
+ 		}
+@@ -383,7 +383,7 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
+ 	memset(pTrackData, 0, sizeof(BYTE *) * realtrackcnt);
+ 	for (UINT iTrack=0; iTrack<realtrackcnt; iTrack++) if (dwMemPos <= dwMemLength - 3)
+ 	{
+-		UINT nTrkSize = bswapLE16(*(USHORT *)(lpStream+dwMemPos));
++		UINT nTrkSize = READ_LE16(lpStream+dwMemPos);
+ 		nTrkSize += (UINT)lpStream[dwMemPos+2] << 16;
+ 		if (dwMemPos + nTrkSize * 3 + 3 <= dwMemLength)
+ 		{
+diff --git a/src/load_ams.cpp b/src/load_ams.cpp
+index 6b69b22..b76036d 100644
+--- a/src/load_ams.cpp
++++ b/src/load_ams.cpp
+@@ -118,7 +118,7 @@ BOOL CSoundFile::ReadAMS(LPCBYTE lpStream, DWORD dwMemLength)
+ 	}
+ 	// Read Song Comments
+ 	if (dwMemPos + 2 > dwMemLength) return TRUE;
+-	tmp = *((WORD *)(lpStream+dwMemPos));
++	tmp = READ_LE16(lpStream+dwMemPos);
+ 	dwMemPos += 2;
+ 	if (tmp >= dwMemLength || dwMemPos > dwMemLength - tmp) return TRUE;
+ 	if (tmp)
+@@ -133,14 +133,14 @@ BOOL CSoundFile::ReadAMS(LPCBYTE lpStream, DWORD dwMemLength)
+ 	if (2*pfh->orders >= dwMemLength || dwMemPos > dwMemLength - 2*pfh->orders) return TRUE;
+ 	for (UINT iOrd=0; iOrd<pfh->orders; iOrd++, dwMemPos += 2)
+ 	{
+-		UINT n = *((WORD *)(lpStream+dwMemPos));
++		UINT n = READ_LE16(lpStream+dwMemPos);
+ 		Order[iOrd] = (BYTE)n;
+ 	}
+ 	// Read Patterns
+ 	for (UINT iPat=0; iPat<pfh->patterns; iPat++)
+ 	{
+ 		if (dwMemPos + 4 >= dwMemLength) return TRUE;
+-		UINT len = *((DWORD *)(lpStream + dwMemPos));
++		UINT len = READ_LE32(lpStream + dwMemPos);
+ 		dwMemPos += 4;
+ 		if ((len >= dwMemLength) || (dwMemPos > dwMemLength - len)) return TRUE;
+ 		PatternSize[iPat] = 64;
+@@ -466,7 +466,7 @@ BOOL CSoundFile::ReadAMS2(LPCBYTE lpStream, DWORD dwMemLength)
+ 			if (dwMemPos + chnnamlen + 256 >= dwMemLength) return TRUE;
+ 		}
+ 		// packed comments (ignored)
+-		UINT songtextlen = *((LPDWORD)(lpStream+dwMemPos));
++		UINT songtextlen = READ_LE32(lpStream+dwMemPos);
+ 		dwMemPos += songtextlen;
+ 		if (dwMemPos + 256 >= dwMemLength) return TRUE;
+ 	}
+@@ -487,7 +487,7 @@ BOOL CSoundFile::ReadAMS2(LPCBYTE lpStream, DWORD dwMemLength)
+ 	for (UINT ipat=0; ipat<psh->patterns; ipat++)
+ 	{
+ 		if (dwMemPos+8 >= dwMemLength) return TRUE;
+-		UINT packedlen = *((LPDWORD)(lpStream+dwMemPos));
++		UINT packedlen = READ_LE32(lpStream+dwMemPos);
+ 		UINT numrows = 1 + (UINT)(lpStream[dwMemPos+4]);
+ 		//UINT patchn = 1 + (UINT)(lpStream[dwMemPos+5] & 0x1F);
+ 		//UINT patcmds = 1 + (UINT)(lpStream[dwMemPos+5] >> 5);
+@@ -579,7 +579,7 @@ static BOOL AMSUnpackCheck(const BYTE *lpStream, DWORD dwMemLength, MODINSTRUMEN
+ // -----------------------------------------------------------------------------------
+ {
+ 	if (dwMemLength < 9) return FALSE;
+-	DWORD packedbytes = *((DWORD *)(lpStream + 4));
++	DWORD packedbytes = READ_LE32(lpStream + 4);
+ 
+ 	DWORD samplebytes = ins->nLength;
+ 	if (samplebytes > MAX_SAMPLE_LENGTH) samplebytes = MAX_SAMPLE_LENGTH;
+diff --git a/src/load_dmf.cpp b/src/load_dmf.cpp
+index e4fc72c..d4331c5 100644
+--- a/src/load_dmf.cpp
++++ b/src/load_dmf.cpp
+@@ -106,7 +106,7 @@ BOOL CSoundFile::ReadDMF(const BYTE *lpStream, DWORD dwMemLength)
+ #endif
+ 	while (dwMemPos < dwMemLength - 7)
+ 	{
+-		DWORD id = *((LPDWORD)(lpStream+dwMemPos));
++		DWORD id = READ_LE32(lpStream+dwMemPos);
+ 
+ 		switch(id)
+ 		{
+@@ -456,10 +456,10 @@ BOOL CSoundFile::ReadDMF(const BYTE *lpStream, DWORD dwMemLength)
+ 					#endif
+ 						break;
+ 					}
+-					pksize = *((LPDWORD)(lpStream+dwPos));
++					pksize = READ_LE32(lpStream+dwPos);
+ 				#ifdef DMFLOG
+ 					Log("sample %d: pos=0x%X pksize=%d ", iSmp, dwPos, pksize);
+-					Log("len=%d flags=0x%X [%08X]\n", Ins[iSmp].nLength, smplflags[ismpd], *((LPDWORD)(lpStream+dwPos+4)));
++					Log("len=%d flags=0x%X [%08X]\n", Ins[iSmp].nLength, smplflags[ismpd], READ_LE32(lpStream+dwPos+4));
+ 				#endif
+ 					dwPos += 4;
+ 					if (pksize > dwMemLength - dwPos)
+diff --git a/src/load_it.cpp b/src/load_it.cpp
+index 45fa8e4..e26fb8e 100644
+--- a/src/load_it.cpp
++++ b/src/load_it.cpp
+@@ -259,7 +259,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
+ 	// Reading IT Extra Info
+ 	if (dwMemPos + 2 < dwMemLength)
+ 	{
+-		UINT nflt = bswapLE16(*((WORD *)(lpStream + dwMemPos)));
++		UINT nflt = READ_LE16(lpStream + dwMemPos);
+ 		dwMemPos += 2;
+ 		if (dwMemPos + nflt * 8 < dwMemLength) dwMemPos += nflt * 8;
+ 	}
+@@ -273,9 +273,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
+ 		}
+ 	}
+ 	// Read pattern names: "PNAM"
+-	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e50))
++	if ((dwMemPos + 8 < dwMemLength) && (READ_LE32(lpStream+dwMemPos) == 0x4d414e50))
+ 	{
+-		UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
++		UINT len = READ_LE32(lpStream+dwMemPos+4);
+ 		dwMemPos += 8;
+ 		if ((dwMemPos + len <= dwMemLength) && (len <= MAX_PATTERNS*MAX_PATTERNNAME) && (len >= MAX_PATTERNNAME))
+ 		{
+@@ -291,9 +291,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
+ 	// 4-channels minimum
+ 	m_nChannels = 4;
+ 	// Read channel names: "CNAM"
+-	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e43))
++	if ((dwMemPos + 8 < dwMemLength) && (READ_LE32(lpStream+dwMemPos) == 0x4d414e43))
+ 	{
+-		UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
++		UINT len = READ_LE32(lpStream+dwMemPos+4);
+ 		dwMemPos += 8;
+ 		if ((dwMemPos + len <= dwMemLength) && (len <= 64*MAX_CHANNELNAME))
+ 		{
+@@ -319,8 +319,8 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
+ 	{
+ 		memset(chnmask, 0, sizeof(chnmask));
+ 		if ((!patpos[patchk]) || ((DWORD)patpos[patchk] >= dwMemLength - 4)) continue;
+-		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[patchk])));
+-		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[patchk]+2)));
++		UINT len = READ_LE16(lpStream+patpos[patchk]);
++		UINT rows = READ_LE16(lpStream+patpos[patchk]+2);
+ 		if ((rows < 4) || (rows > 256)) continue;
+ 		if (8+len > dwMemLength || patpos[patchk] > dwMemLength - (8+len)) continue;
+ 		UINT i = 0;
+@@ -451,8 +451,8 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
+ 			continue;
+ 		}
+ 
+-		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[npat])));
+-		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[npat]+2)));
++		UINT len = READ_LE16(lpStream+patpos[npat]);
++		UINT rows = READ_LE16(lpStream+patpos[npat]+2);
+ 		if ((rows < 4) || (rows > 256)) continue;
+ 		if (8+len > dwMemLength || patpos[npat] > dwMemLength - (8+len)) continue;
+ 		PatternSize[npat] = rows;
+@@ -1233,7 +1233,7 @@ DWORD ITUnpack8Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dw
+ 		if (!wCount)
+ 		{
+ 			wCount = 0x8000;
+-		//	wHdr = bswapLE16(*((LPWORD)pSrc));
++		//	wHdr = READ_LE16(pSrc);
+ 			pSrc += 2;
+ 			bLeft = 9;
+ 			bTemp = bTemp2 = 0;
+@@ -1320,7 +1320,7 @@ DWORD ITUnpack16Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD d
+ 		if (!wCount)
+ 		{
+ 			wCount = 0x4000;
+-		//	wHdr = bswapLE16(*((LPWORD)pSrc));
++		//	wHdr = READ_LE16(pSrc);
+ 			pSrc += 2;
+ 			bLeft = 17;
+ 			wTemp = wTemp2 = 0;
+@@ -1482,13 +1482,13 @@ UINT CSoundFile::LoadMixPlugins(const void *pData, UINT nLen)
+ 		DWORD nPluginSize;
+ 		UINT nPlugin;
+ 
+-		nPluginSize = bswapLE32(*(DWORD *)(p+nPos+4));
++		nPluginSize = READ_LE32(p+nPos+4);
+ 		if (nPluginSize > nLen-nPos-8) break;;
+-		if ((bswapLE32(*(DWORD *)(p+nPos))) == 0x58464843)
++		if (READ_LE32(p+nPos) == 0x58464843)
+ 		{
+ 			for (UINT ch=0; ch<64; ch++) if (ch*4 < nPluginSize)
+ 			{
+-				ChnSettings[ch].nMixPlugin = bswapLE32(*(DWORD *)(p+nPos+8+ch*4));
++				ChnSettings[ch].nMixPlugin = READ_LE32(p+nPos+8+ch*4);
+ 			}
+ 		} else
+ 		{
+@@ -1500,7 +1500,7 @@ UINT CSoundFile::LoadMixPlugins(const void *pData, UINT nLen)
+ 			nPlugin = (p[nPos+2]-'0')*10 + (p[nPos+3]-'0');
+ 			if ((nPlugin < MAX_MIXPLUGINS) && (nPluginSize >= sizeof(SNDMIXPLUGININFO)+4))
+ 			{
+-				DWORD dwExtra = bswapLE32(*(DWORD *)(p+nPos+8+sizeof(SNDMIXPLUGININFO)));
++				DWORD dwExtra = READ_LE32(p+nPos+8+sizeof(SNDMIXPLUGININFO));
+ 				m_MixPlugins[nPlugin].Info = *(const SNDMIXPLUGININFO *)(p+nPos+8);
+ 				m_MixPlugins[nPlugin].Info.dwPluginId1 = bswapLE32(m_MixPlugins[nPlugin].Info.dwPluginId1);
+ 				m_MixPlugins[nPlugin].Info.dwPluginId2 = bswapLE32(m_MixPlugins[nPlugin].Info.dwPluginId2);
+diff --git a/src/load_med.cpp b/src/load_med.cpp
+index e5b3076..9069415 100644
+--- a/src/load_med.cpp
++++ b/src/load_med.cpp
+@@ -755,9 +755,9 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
+ 				{
+ 					while (trktagofs < dwMemLength - 8)
+ 					{
+-						DWORD ntag = bswapBE32(*(DWORD *)(lpStream + trktagofs));
++						DWORD ntag = READ_BE32(lpStream + trktagofs);
+ 						if (ntag == MMDTAG_END) break;
+-						DWORD tagdata = bswapBE32(*(DWORD *)(lpStream + trktagofs + 4));
++						DWORD tagdata = READ_BE32(lpStream + trktagofs + 4);
+ 						switch(ntag)
+ 						{
+ 						case MMDTAG_TRK_NAMELEN:	trknamelen = tagdata; break;
+@@ -894,7 +894,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
+ 					DWORD cmdexttable = bswapBE32(pbi->cmdexttable);
+ 					if (cmdexttable < dwMemLength - 4)
+ 					{
+-						cmdexttable = bswapBE32(*(DWORD *)(lpStream + cmdexttable));
++						cmdexttable = READ_BE32(lpStream + cmdexttable);
+ 						if ((cmdexttable) && (cmdexttable <= dwMemLength - lines*tracks))
+ 						{
+ 							pcmdext = (BYTE *)(lpStream + cmdexttable);
+diff --git a/src/load_mod.cpp b/src/load_mod.cpp
+index 4b64b23..8a5b6f1 100644
+--- a/src/load_mod.cpp
++++ b/src/load_mod.cpp
+@@ -187,7 +187,7 @@ static BOOL IsValidName(LPCSTR s, int length, CHAR minChar)
+ 
+ static BOOL IsMagic(LPCSTR s1, LPCSTR s2)
+ {
+-	return ((*(DWORD *)s1) == (*(DWORD *)s2)) ? TRUE : FALSE;
++	return memcmp(s1, s2, 4) ? FALSE : TRUE;
+ }
+ 
+ BOOL CSoundFile::ReadMod(const BYTE *lpStream, DWORD dwMemLength)
+diff --git a/src/load_mt2.cpp b/src/load_mt2.cpp
+index a4c2aab..8f26c66 100644
+--- a/src/load_mt2.cpp
++++ b/src/load_mt2.cpp
+@@ -225,7 +225,7 @@ BOOL CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength)
+ 	m_szNames[0][31] = 0;
+ 	dwMemPos = sizeof(MT2FILEHEADER);
+ 	if (dwMemPos+2 > dwMemLength) return TRUE;
+-	nDrumDataLen = *(WORD *)(lpStream + dwMemPos);
++	nDrumDataLen = READ_LE16(lpStream + dwMemPos);
+ 	dwDrumDataPos = dwMemPos + 2;
+ 	if (nDrumDataLen >= 2) pdd = (MT2DRUMSDATA *)(lpStream+dwDrumDataPos);
+ 	dwMemPos += 2 + nDrumDataLen;
+@@ -236,9 +236,9 @@ BOOL CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength)
+ 	Log("Drum Data: %d bytes @%04X\n", nDrumDataLen, dwDrumDataPos);
+ #endif
+ 	if (dwMemPos >= dwMemLength-12) return TRUE;
+-	if (!*(DWORD *)(lpStream+dwMemPos)) dwMemPos += 4;
+-	if (!*(DWORD *)(lpStream+dwMemPos)) dwMemPos += 4;
+-	nExtraDataLen = *(DWORD *)(lpStream+dwMemPos);
++	if (!READ_LE32(lpStream+dwMemPos)) dwMemPos += 4;
++	if (!READ_LE32(lpStream+dwMemPos)) dwMemPos += 4;
++	nExtraDataLen = READ_LE32(lpStream+dwMemPos);
+ 	dwExtraDataPos = dwMemPos + 4;
+ 	dwMemPos += 4;
+ #ifdef MT2DEBUG
+@@ -247,8 +247,8 @@ BOOL CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength)
+ 	if (dwMemPos + nExtraDataLen >= dwMemLength) return TRUE;
+ 	while (dwMemPos+8 < dwExtraDataPos + nExtraDataLen)
+ 	{
+-		DWORD dwId = *(DWORD *)(lpStream+dwMemPos);
+-		DWORD dwLen = *(DWORD *)(lpStream+dwMemPos+4);
++		DWORD dwId = READ_LE32(lpStream+dwMemPos);
++		DWORD dwLen = READ_LE32(lpStream+dwMemPos+4);
+ 		dwMemPos += 8;
+ 		if (dwLen >= dwMemLength || dwMemPos > dwMemLength - dwLen) return TRUE;
+ #ifdef MT2DEBUG
+@@ -374,7 +374,7 @@ BOOL CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength)
+ 		for (UINT iDrm=0; iDrm<pdd->wDrumPatterns; iDrm++)
+ 		{
+ 			if (dwMemPos > dwMemLength-2) return TRUE;
+-			UINT nLines = *(WORD *)(lpStream+dwMemPos);
++			UINT nLines = READ_LE16(lpStream+dwMemPos);
+ 		#ifdef MT2DEBUG
+ 			if (nLines != 64) Log("Drum Pattern %d: %d Lines @%04X\n", iDrm, nLines, dwMemPos);
+ 		#endif
+@@ -401,7 +401,7 @@ BOOL CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength)
+ 				if (pma->dwFlags & (1 << iEnv))
+ 				{
+ 				#ifdef MT2DEBUG
+-					UINT nPoints = *(DWORD *)(lpStream+dwMemPos);
++					UINT nPoints = READ_LE32(lpStream+dwMemPos);
+ 					Log("  Env[%d/%d] %04X @%04X: %d points\n", iAuto, nAutoCount, 1 << iEnv, dwMemPos-8, nPoints);
+ 				#endif
+ 					dwMemPos += 260;
+@@ -656,7 +656,7 @@ BOOL CSoundFile::ReadMT2(LPCBYTE lpStream, DWORD dwMemLength)
+ 		} else
+ 		if (dwMemPos < dwMemLength-4)
+ 		{
+-			UINT nNameLen = *(DWORD *)(lpStream+dwMemPos);
++			UINT nNameLen = READ_LE32(lpStream+dwMemPos);
+ 			dwMemPos += nNameLen + 16;
+ 		}
+ 		if (dwMemPos >= dwMemLength-4) break;
+diff --git a/src/load_psm.cpp b/src/load_psm.cpp
+index d594c76..a44220d 100644
+--- a/src/load_psm.cpp
++++ b/src/load_psm.cpp
+@@ -215,7 +215,7 @@ BOOL CSoundFile::ReadPSM(LPCBYTE lpStream, DWORD dwMemLength)
+ 	m_nChannels = pSong->channels;
+ 	// Valid song header -> convert attached chunks
+ 	{
+-		DWORD dwSongEnd = dwSongPos + 8 + *(DWORD *)(lpStream+dwSongPos+4);
++		DWORD dwSongEnd = dwSongPos + 8 + READ_LE32(lpStream+dwSongPos+4);
+ 		dwMemPos = dwSongPos + 8 + 11; // sizeof(PSMCHUNK)+sizeof(PSMSONGHDR)
+ 		while (dwMemPos + 8 < dwSongEnd)
+ 		{
+@@ -235,10 +235,10 @@ BOOL CSoundFile::ReadPSM(LPCBYTE lpStream, DWORD dwMemLength)
+ 					{
+ 						BOOL bFound = FALSE;
+ 						pos -= 5;
+-						DWORD dwName = *(DWORD *)(pdata+pos);
++						DWORD dwName = READ_LE32(pdata+pos);
+ 						for (UINT i=0; i<nPatterns; i++)
+ 						{
+-							DWORD dwPatName = ((const PSMPATTERN *)(lpStream+patptrs[i]+8))->name;
++							DWORD dwPatName = READ_LE32(lpStream+patptrs[i]+12);
+ 							if (dwName == dwPatName)
+ 							{
+ 								bFound = TRUE;
+@@ -256,10 +256,10 @@ BOOL CSoundFile::ReadPSM(LPCBYTE lpStream, DWORD dwMemLength)
+ 					UINT iOrd = 0;
+ 					while ((pos+5<len) && (iOrd < MAX_ORDERS))
+ 					{
+-						DWORD dwName = *(DWORD *)(pdata+pos);
++						DWORD dwName = READ_LE32(pdata+pos);
+ 						for (UINT i=0; i<nPatterns; i++)
+ 						{
+-							DWORD dwPatName = ((const PSMPATTERN *)(lpStream+patptrs[i]+8))->name;
++							DWORD dwPatName = READ_LE32(lpStream+patptrs[i]+12);
+ 							if (dwName == dwPatName)
+ 							{
+ 								Order[iOrd++] = i;
+diff --git a/src/load_s3m.cpp b/src/load_s3m.cpp
+index 9249c0e..224b384 100644
+--- a/src/load_s3m.cpp
++++ b/src/load_s3m.cpp
+@@ -341,7 +341,7 @@ BOOL CSoundFile::ReadS3M(const BYTE *lpStream, DWORD dwMemLength)
+ 	{
+ 		UINT nInd = ((DWORD)ptr[nins+iPat]) << 4;
+ 		if (nInd + 0x40 > dwMemLength) continue;
+-		WORD len = bswapLE16(*((WORD *)(lpStream+nInd)));
++		WORD len = READ_LE16(lpStream+nInd);
+ 		nInd += 2;
+ 		PatternSize[iPat] = 64;
+ 		if ((!len) || (nInd + len > dwMemLength - 6)
+diff --git a/src/load_umx.cpp b/src/load_umx.cpp
+index 056c6ca..564ca98 100644
+--- a/src/load_umx.cpp
++++ b/src/load_umx.cpp
+@@ -9,6 +9,7 @@
+  * Retrieves the offset, size and object type directly from umx.
+ */
+ 
++#include <stddef.h>
+ #include "stdafx.h"
+ #include "sndfile.h"
+ 
+@@ -42,8 +43,10 @@ struct upkg_hdr {
+ 	DWORD guid[4];
+ 	LONG generation_count;
+ #define UPKG_HDR_SIZE 64			/* 64 bytes up until here */
+-	/*struct _genhist *gen;*/
++	struct _genhist *gen;
+ };
++/* compile time assert for upkg_hdr size */
++typedef int _check_hdrsize[2 * (offsetof(struct upkg_hdr, gen) == UPKG_HDR_SIZE) - 1];
+ 
+ #define UMUSIC_IT	0
+ #define UMUSIC_S3M	1
+@@ -249,21 +252,18 @@ static int probe_umx   (const BYTE *membase, LONG memlen,
+ 	return t;
+ }
+ 
+-static int probe_header (void *header)
++static int probe_header (struct upkg_hdr *hdr, const BYTE *src)
+ {
+-	struct upkg_hdr *hdr;
+-	unsigned char *p;
+-	DWORD *swp;
+-	int i;
+-
+-	/* byte swap the header - all members are 32 bit LE values */
+-	p = (unsigned char *) header;
+-	swp = (DWORD *) header;
+-	for (i = 0; i < UPKG_HDR_SIZE/4; i++, p += 4) {
+-		swp[i] = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+-	}
++	hdr->tag           = READ_LE32(src +  0);
++	hdr->file_version  = READ_LE32(src +  4);
++	hdr->pkg_flags     = READ_LE32(src +  8);
++	hdr->name_count    = READ_LE32(src + 12);
++	hdr->name_offset   = READ_LE32(src + 16);
++	hdr->export_count  = READ_LE32(src + 20);
++	hdr->export_offset = READ_LE32(src + 24);
++	hdr->import_count  = READ_LE32(src + 28);
++	hdr->import_offset = READ_LE32(src + 32);
+ 
+-	hdr = (struct upkg_hdr *) header;
+ 	if (hdr->tag != UPKG_HDR_TAG) {
+ 		return -1;
+ 	}
+@@ -300,13 +300,12 @@ static int probe_header (void *header)
+ static int process_upkg (const BYTE *membase, LONG memlen,
+ 			 LONG *ofs, LONG *objsize)
+ {
+-	char header[UPKG_HDR_SIZE];
++	struct upkg_hdr header;
+ 
+-	memcpy(header, membase, UPKG_HDR_SIZE);
+-	if (probe_header(header) < 0)
++	if (probe_header(&header, membase) < 0)
+ 		return -1;
+ 
+-	return probe_umx(membase, memlen, (struct upkg_hdr *)header, ofs, objsize);
++	return probe_umx(membase, memlen, &header, ofs, objsize);
+ }
+ 
+ BOOL CSoundFile::ReadUMX(const BYTE *lpStream, DWORD dwMemLength)
+diff --git a/src/load_wav.cpp b/src/load_wav.cpp
+index 48de613..8d5fe2f 100644
+--- a/src/load_wav.cpp
++++ b/src/load_wav.cpp
+@@ -118,10 +118,10 @@ BOOL CSoundFile::ReadWav(const BYTE *lpStream, DWORD dwMemLength)
+ 		{
+ 			int slsize = pfmt->bitspersample >> 3;
+ 			signed short *p = (signed short *)pins->pSample;
+-			signed char *psrc = (signed char *)(lpStream+dwMemPos+8+nChn*slsize+slsize-2);
++			const BYTE *psrc = lpStream + dwMemPos + 8 + nChn*slsize + slsize - 2;
+ 			for (UINT i=0; i<len; i++)
+ 			{
+-				p[i] = *((signed short *)psrc);
++				p[i] = (signed short) READ_LE16(psrc);
+ 				psrc += samplesize;
+ 			}
+ 			p[len+1] = p[len] = p[len-1];
+@@ -185,7 +185,7 @@ BOOL IMAADPCMUnpack16(signed short *pdest, UINT nLen, LPBYTE psrc, DWORD dwBytes
+ 	while ((nPos < nLen) && (dwBytes > 4))
+ 	{
+ 		int nIndex;
+-		value = *((short int *)psrc);
++		value = READ_LE16(psrc);
+ 		nIndex = psrc[2];
+ 		psrc += 4;
+ 		dwBytes -= 4;
+diff --git a/src/load_xm.cpp b/src/load_xm.cpp
+index 4d5a493..2a398a3 100644
+--- a/src/load_xm.cpp
++++ b/src/load_xm.cpp
+@@ -159,17 +159,17 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
+ 		UINT ipatmap = pattern_map[ipat];
+ 		DWORD dwSize = 0;
+ 		WORD rows=64, packsize=0;
+-		dwSize = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
++		dwSize = READ_LE32(lpStream+dwMemPos);
+ 		while ((dwMemPos + dwSize >= dwMemLength) || (dwSize & 0xFFFFFF00))
+ 		{
+ 			if (dwMemPos + 4 >= dwMemLength) break;
+ 			dwMemPos++;
+-			dwSize = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
++			dwSize = READ_LE32(lpStream+dwMemPos);
+ 		}
+ 		if (dwMemPos + 9 > dwMemLength) return TRUE;
+-		rows = bswapLE16(*((WORD *)(lpStream+dwMemPos+5)));
++		rows = READ_LE16(lpStream+dwMemPos+5);
+ 		if ((!rows) || (rows > 256)) rows = 64;
+-		packsize = bswapLE16(*((WORD *)(lpStream+dwMemPos+7)));
++		packsize = READ_LE16(lpStream+dwMemPos+7);
+ 		if (dwMemPos + dwSize + 4 > dwMemLength) return TRUE;
+ 		dwMemPos += dwSize;
+ 		if (dwMemPos + packsize + 4 > dwMemLength) return TRUE;
+@@ -268,7 +268,7 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
+ 	// Wrong offset check
+ 	while (dwMemPos + 4 < dwMemLength)
+ 	{
+-		DWORD d = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
++		DWORD d = READ_LE32(lpStream+dwMemPos);
+ 		if (d < 0x300) break;
+ 		dwMemPos++;
+ 	}
+@@ -519,9 +519,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
+ 		}
+ 	}
+ 	// Read song comments: "TEXT"
+-	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x74786574))
++	if ((dwMemPos + 8 < dwMemLength) && (READ_LE32(lpStream+dwMemPos) == 0x74786574))
+ 	{
+-		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
++		UINT len = READ_LE32(lpStream+dwMemPos+4);
+ 		dwMemPos += 8;
+ 		if ((dwMemPos + len <= dwMemLength) && (len < 16384))
+ 		{
+@@ -535,9 +535,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
+ 		}
+ 	}
+ 	// Read midi config: "MIDI"
+-	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4944494D))
++	if ((dwMemPos + 8 < dwMemLength) && (READ_LE32(lpStream+dwMemPos) == 0x4944494D))
+ 	{
+-		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
++		UINT len = READ_LE32(lpStream+dwMemPos+4);
+ 		dwMemPos += 8;
+ 		if (len >= dwMemLength || dwMemPos > dwMemLength - len) return TRUE;
+ 		if (len == sizeof(MODMIDICFG))
+@@ -547,9 +547,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
+ 		}
+ 	}
+ 	// Read pattern names: "PNAM"
+-	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e50))
++	if ((dwMemPos + 8 < dwMemLength) && (READ_LE32(lpStream+dwMemPos) == 0x4d414e50))
+ 	{
+-		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
++		UINT len = READ_LE32(lpStream+dwMemPos+4);
+ 		dwMemPos += 8;
+ 		if (len >= dwMemLength || dwMemPos > dwMemLength - len) return TRUE;
+ 		if ((len <= MAX_PATTERNS*MAX_PATTERNNAME) && (len >= MAX_PATTERNNAME))
+@@ -565,9 +565,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
+ 		}
+ 	}
+ 	// Read channel names: "CNAM"
+-	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e43))
++	if ((dwMemPos + 8 < dwMemLength) && (READ_LE32(lpStream+dwMemPos) == 0x4d414e43))
+ 	{
+-		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
++		UINT len = READ_LE32(lpStream+dwMemPos+4);
+ 		dwMemPos += 8;
+ 		if (len >= dwMemLength || dwMemPos > dwMemLength - len) return TRUE;
+ 		if (len <= MAX_BASECHANNELS*MAX_CHANNELNAME)
+diff --git a/src/mmcmp.cpp b/src/mmcmp.cpp
+index 98d7821..0b53107 100644
+--- a/src/mmcmp.cpp
++++ b/src/mmcmp.cpp
+@@ -15,7 +15,7 @@ typedef struct MMCMPFILEHEADER
+ {
+ 	char id[8]; /* string 'ziRCONia' */
+ 	WORD hdrsize; /* sizeof MMCMPHEADER */
+-} MMCMPFILEHEADER, *LPMMCMPFILEHEADER;
++} MMCMPFILEHEADER;
+ 
+ typedef struct MMCMPHEADER
+ {
+@@ -25,7 +25,7 @@ typedef struct MMCMPHEADER
+ 	DWORD blktable;
+ 	BYTE glb_comp;
+ 	BYTE fmt_comp;
+-} MMCMPHEADER, *LPMMCMPHEADER;
++} MMCMPHEADER;
+ 
+ typedef struct MMCMPBLOCK
+ {
+@@ -36,13 +36,13 @@ typedef struct MMCMPBLOCK
+ 	WORD flags;
+ 	WORD tt_entries;
+ 	USHORT num_bits;
+-} MMCMPBLOCK, *LPMMCMPBLOCK;
++} MMCMPBLOCK;
+ 
+ typedef struct MMCMPSUBBLOCK
+ {
+ 	DWORD unpk_pos;
+ 	DWORD unpk_size;
+-} MMCMPSUBBLOCK, *LPMMCMPSUBBLOCK;
++} MMCMPSUBBLOCK;
+ #pragma pack()
+ 
+ /* make sure of structure sizes */
+@@ -113,34 +113,21 @@ static const UINT MMCMP16BitFetch[16] =
+ };
+ 
+ 
+-static void swap_mfh(LPMMCMPFILEHEADER fh)
++static void read_block (MMCMPBLOCK *pblk, LPCBYTE src)
+ {
+-	fh->hdrsize = bswapLE16(fh->hdrsize);
++	pblk->unpk_size  = READ_LE32(src +  0);
++	pblk->pk_size    = READ_LE32(src +  4);
++	pblk->xor_chk    = READ_LE32(src +  8);
++	pblk->sub_blk    = READ_LE16(src + 12);
++	pblk->flags      = READ_LE16(src + 14);
++	pblk->tt_entries = READ_LE16(src + 16);
++	pblk->num_bits   = READ_LE16(src + 18);
+ }
+ 
+-static void swap_mmh(LPMMCMPHEADER mh)
++static void read_subblock (MMCMPSUBBLOCK *psub, LPCBYTE src)
+ {
+-	mh->version = bswapLE16(mh->version);
+-	mh->nblocks = bswapLE16(mh->nblocks);
+-	mh->filesize = bswapLE32(mh->filesize);
+-	mh->blktable = bswapLE32(mh->blktable);
+-}
+-
+-static void swap_block (LPMMCMPBLOCK blk)
+-{
+-	blk->unpk_size = bswapLE32(blk->unpk_size);
+-	blk->pk_size = bswapLE32(blk->pk_size);
+-	blk->xor_chk = bswapLE32(blk->xor_chk);
+-	blk->sub_blk = bswapLE16(blk->sub_blk);
+-	blk->flags = bswapLE16(blk->flags);
+-	blk->tt_entries = bswapLE16(blk->tt_entries);
+-	blk->num_bits = bswapLE16(blk->num_bits);
+-}
+-
+-static void swap_subblock (LPMMCMPSUBBLOCK sblk)
+-{
+-	sblk->unpk_pos = bswapLE32(sblk->unpk_pos);
+-	sblk->unpk_size = bswapLE32(sblk->unpk_size);
++	psub->unpk_pos  = READ_LE32(src +  0);
++	psub->unpk_size = READ_LE32(src +  4);
+ }
+ 
+ static BOOL MMCMP_IsDstBlockValid(const MMCMPSUBBLOCK *psub, DWORD dstlen)
+@@ -157,11 +144,9 @@ BOOL MMCMP_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+ 	DWORD dwMemLength;
+ 	LPCBYTE lpMemFile;
+ 	LPBYTE pBuffer,pBufEnd;
+-	LPMMCMPFILEHEADER pmfh;
+-	LPMMCMPHEADER pmmh;
+-	const DWORD *pblk_table;
++	LPCBYTE pblk_table;
++	DWORD nblocks, blktable;
+ 	DWORD dwFileSize;
+-	BYTE tmp0[32], tmp1[32];
+ 
+ 	if (PP20_Unpack(ppMemFile, pdwMemLength))
+ 	{
+@@ -171,99 +156,96 @@ BOOL MMCMP_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+ 	dwMemLength = *pdwMemLength;
+ 	lpMemFile = *ppMemFile;
+ 	if ((dwMemLength < 256) || (!lpMemFile)) return FALSE;
+-	memcpy(tmp0, lpMemFile, 24);
+-	pmfh = (LPMMCMPFILEHEADER)(tmp0);
+-	pmmh = (LPMMCMPHEADER)(tmp0+10);
+-	swap_mfh(pmfh);
+-	swap_mmh(pmmh);
+ 
+-	if ((memcmp(pmfh->id,"ziRCONia",8) != 0) || (pmfh->hdrsize != 14))
++	if (memcmp(lpMemFile,"ziRCONia",8) != 0)
++		return FALSE;
++	if (READ_LE16(lpMemFile+8) != 14) /* hdrsize */
+ 		return FALSE;
+-	if ((!pmmh->nblocks) || (pmmh->filesize < 16) || (pmmh->filesize > 0x8000000) ||
+-	    (pmmh->blktable >= dwMemLength) || (pmmh->blktable + 4*pmmh->nblocks > dwMemLength)) {
++
++	nblocks = READ_LE16(lpMemFile+12);
++	dwFileSize = READ_LE32(lpMemFile+14);
++	blktable = READ_LE32(lpMemFile+18);
++	if (!nblocks || (dwFileSize < 16) || (dwFileSize > 0x8000000) ||
++	    (blktable >= dwMemLength) || (blktable + 4*nblocks > dwMemLength)) {
+ 		return FALSE;
+ 	}
+-	dwFileSize = pmmh->filesize;
++
+ 	if ((pBuffer = (LPBYTE)calloc(1, (dwFileSize + 31) & ~15)) == NULL)
+ 		return FALSE;
+ 	pBufEnd = pBuffer + dwFileSize;
+-	pblk_table = (const DWORD *)(lpMemFile+pmmh->blktable);
+-	for (UINT nBlock=0; nBlock<pmmh->nblocks; nBlock++)
++	pblk_table = lpMemFile + blktable;
++	for (UINT nBlock=0; nBlock < nblocks; nBlock++)
+ 	{
+-		DWORD dwMemPos = bswapLE32(pblk_table[nBlock]);
++		DWORD dwMemPos = READ_LE32(pblk_table + 4*nBlock);
+ 		DWORD dwSubPos;
+-		LPMMCMPBLOCK pblk;
+-		LPMMCMPSUBBLOCK psubblk;
++		MMCMPBLOCK blk;
++		MMCMPSUBBLOCK subblk;
+ 
+ 		if (dwMemPos >= dwMemLength - 20)
+ 			goto err;
+-		memcpy(tmp1,lpMemFile+dwMemPos,28);
+-		pblk = (LPMMCMPBLOCK)(tmp1);
+-		psubblk = (LPMMCMPSUBBLOCK)(tmp1+20);
+-		swap_block(pblk);
+-		swap_subblock(psubblk);
++		read_block(&blk, lpMemFile + dwMemPos);
++		read_subblock(&subblk, lpMemFile + dwMemPos + 20);
+ 
+-		if (!pblk->unpk_size || !pblk->pk_size || !pblk->sub_blk)
++		if (!blk.unpk_size || !blk.pk_size || !blk.sub_blk)
+ 			goto err;
+-		if (pblk->pk_size <= pblk->tt_entries)
++		if (blk.pk_size <= blk.tt_entries)
+ 			goto err;
+-		if (pblk->sub_blk*8 >= dwMemLength - dwMemPos - 20)
++		if (blk.sub_blk*8 >= dwMemLength - dwMemPos - 20)
+ 			goto err;
+-		if (pblk->flags & MMCMP_COMP) {
+-			if (pblk->flags & MMCMP_16BIT) {
+-				if (pblk->num_bits >= 16)
++		if (blk.flags & MMCMP_COMP) {
++			if (blk.flags & MMCMP_16BIT) {
++				if (blk.num_bits >= 16)
+ 					goto err;
+ 			}
+ 			else {
+-				if (pblk->num_bits >=  8)
++				if (blk.num_bits >=  8)
+ 					goto err;
+ 			}
+ 		}
+ 
+ 		dwSubPos = dwMemPos + 20;
+-		dwMemPos += 20 + pblk->sub_blk*8;
++		dwMemPos += 20 + blk.sub_blk*8;
+ #ifdef MMCMP_LOG
+-		Log("block %d: flags=%04X sub_blocks=%d", nBlock, (UINT)pblk->flags, (UINT)pblk->sub_blk);
+-		Log(" pksize=%d unpksize=%d", pblk->pk_size, pblk->unpk_size);
+-		Log(" tt_entries=%d num_bits=%d\n", pblk->tt_entries, pblk->num_bits);
++		Log("block %d: flags=%04X sub_blocks=%d", nBlock, (UINT)blk.flags, (UINT)blk.sub_blk);
++		Log(" pksize=%d unpksize=%d", blk.pk_size, blk.unpk_size);
++		Log(" tt_entries=%d num_bits=%d\n", blk.tt_entries, blk.num_bits);
+ #endif
+-		if (!(pblk->flags & MMCMP_COMP))
++		if (!(blk.flags & MMCMP_COMP))
+ 		{ /* Data is not packed */
+ 			UINT i=0;
+ 			while (1) {
+ #ifdef MMCMP_LOG
+-				Log("  Unpacked sub-block %d: offset %d, size=%d\n", i, psubblk->unpk_pos, psubblk->unpk_size);
++				Log("  Unpacked sub-block %d: offset %d, size=%d\n", i, subblk.unpk_pos, subblk.unpk_size);
+ #endif
+-				if (!MMCMP_IsDstBlockValid(psubblk, dwFileSize))
++				if (!MMCMP_IsDstBlockValid(&subblk, dwFileSize))
+ 					goto err;
+-				memcpy(pBuffer+psubblk->unpk_pos, lpMemFile+dwMemPos, psubblk->unpk_size);
+-				dwMemPos += psubblk->unpk_size;
+-				if (++i == pblk->sub_blk) break;
+-				memcpy(tmp1+20,lpMemFile+dwSubPos+i*8,8);
+-				swap_subblock(psubblk);
++				memcpy(pBuffer+subblk.unpk_pos, lpMemFile+dwMemPos, subblk.unpk_size);
++				dwMemPos += subblk.unpk_size;
++				if (++i == blk.sub_blk) break;
++				read_subblock(&subblk, lpMemFile + dwSubPos + i*8);
+ 			}
+ 		}
+-		else if (pblk->flags & MMCMP_16BIT)
++		else if (blk.flags & MMCMP_16BIT)
+ 		{ /* Data is 16-bit packed */
+ 			MMCMPBITBUFFER bb;
+-			LPBYTE pDest = pBuffer + psubblk->unpk_pos;
+-			DWORD dwSize = psubblk->unpk_size;
++			LPBYTE pDest = pBuffer + subblk.unpk_pos;
++			DWORD dwSize = subblk.unpk_size;
+ 			DWORD dwPos = 0;
+-			UINT numbits = pblk->num_bits;
+-			UINT subblk = 0, oldval = 0;
++			UINT numbits = blk.num_bits;
++			UINT nsubblk = 0, oldval = 0;
+ 
+ #ifdef MMCMP_LOG
+-			Log("  16-bit block: pos=%d size=%d ", psubblk->unpk_pos, psubblk->unpk_size);
++			Log("  16-bit block: pos=%d size=%d ", subblk.unpk_pos, subblk.unpk_size);
+ 			if (pblk->flags & MMCMP_DELTA) Log("DELTA ");
+ 			if (pblk->flags & MMCMP_ABS16) Log("ABS16 ");
+ 			Log("\n");
+ #endif
+-			if (!MMCMP_IsDstBlockValid(psubblk, dwFileSize))
++			if (!MMCMP_IsDstBlockValid(&subblk, dwFileSize))
+ 				goto err;
+ 			bb.bitcount = 0;
+ 			bb.bitbuffer = 0;
+-			bb.pSrc = lpMemFile+dwMemPos+pblk->tt_entries;
+-			bb.pEnd = lpMemFile+dwMemPos+pblk->pk_size;
++			bb.pSrc = lpMemFile+dwMemPos+blk.tt_entries;
++			bb.pEnd = lpMemFile+dwMemPos+blk.pk_size;
+ 			while (1)
+ 			{
+ 				UINT newval = 0x10000;
+@@ -294,12 +276,12 @@ BOOL MMCMP_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+ 				if (newval < 0x10000)
+ 				{
+ 					newval = (newval & 1) ? (UINT)(-(LONG)((newval+1) >> 1)) : (UINT)(newval >> 1);
+-					if (pblk->flags & MMCMP_DELTA)
++					if (blk.flags & MMCMP_DELTA)
+ 					{
+ 						newval += oldval;
+ 						oldval = newval;
+ 					} else
+-					if (!(pblk->flags & MMCMP_ABS16))
++					if (!(blk.flags & MMCMP_ABS16))
+ 					{
+ 						newval ^= 0x8000;
+ 					}
+@@ -310,33 +292,32 @@ BOOL MMCMP_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+ 				}
+ 				if (dwPos >= dwSize)
+ 				{
+-					if (++subblk == pblk->sub_blk) break;
++					if (++nsubblk == blk.sub_blk) break;
+ 					dwPos = 0;
+-					memcpy(tmp1+20,lpMemFile+dwSubPos+subblk*8,8);
+-					swap_subblock(psubblk);
+-					if (!MMCMP_IsDstBlockValid(psubblk, dwFileSize))
++					read_subblock(&subblk, lpMemFile + dwSubPos + nsubblk*8);
++					if (!MMCMP_IsDstBlockValid(&subblk, dwFileSize))
+ 						goto err;
+-					dwSize = psubblk->unpk_size;
+-					pDest = pBuffer + psubblk->unpk_pos;
++					dwSize = subblk.unpk_size;
++					pDest = pBuffer + subblk.unpk_pos;
+ 				}
+ 			}
+ 		}
+ 		else
+ 		{ /* Data is 8-bit packed */
+ 			MMCMPBITBUFFER bb;
+-			LPBYTE pDest = pBuffer + psubblk->unpk_pos;
+-			DWORD dwSize = psubblk->unpk_size;
++			LPBYTE pDest = pBuffer + subblk.unpk_pos;
++			DWORD dwSize = subblk.unpk_size;
+ 			DWORD dwPos = 0;
+-			UINT numbits = pblk->num_bits;
+-			UINT subblk = 0, oldval = 0;
++			UINT numbits = blk.num_bits;
++			UINT nsubblk = 0, oldval = 0;
+ 			LPCBYTE ptable = lpMemFile+dwMemPos;
+ 
+-			if (!MMCMP_IsDstBlockValid(psubblk, dwFileSize))
++			if (!MMCMP_IsDstBlockValid(&subblk, dwFileSize))
+ 				goto err;
+ 			bb.bitcount = 0;
+ 			bb.bitbuffer = 0;
+-			bb.pSrc = lpMemFile+dwMemPos+pblk->tt_entries;
+-			bb.pEnd = lpMemFile+dwMemPos+pblk->pk_size;
++			bb.pSrc = lpMemFile+dwMemPos+blk.tt_entries;
++			bb.pEnd = lpMemFile+dwMemPos+blk.pk_size;
+ 			while (1)
+ 			{
+ 				UINT newval = 0x100;
+@@ -367,7 +348,7 @@ BOOL MMCMP_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+ 				if (newval < 0x100)
+ 				{
+ 					int n = ptable[newval];
+-					if (pblk->flags & MMCMP_DELTA)
++					if (blk.flags & MMCMP_DELTA)
+ 					{
+ 						n += oldval;
+ 						oldval = n;
+@@ -376,14 +357,13 @@ BOOL MMCMP_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+ 				}
+ 				if (dwPos >= dwSize)
+ 				{
+-					if (++subblk == pblk->sub_blk) break;
++					if (++nsubblk == blk.sub_blk) break;
+ 					dwPos = 0;
+-					memcpy(tmp1+20,lpMemFile+dwSubPos+subblk*8,8);
+-					swap_subblock(psubblk);
+-					if (!MMCMP_IsDstBlockValid(psubblk, dwFileSize))
++					read_subblock(&subblk, lpMemFile + dwSubPos + nsubblk*8);
++					if (!MMCMP_IsDstBlockValid(&subblk, dwFileSize))
+ 						goto err;
+-					dwSize = psubblk->unpk_size;
+-					pDest = pBuffer + psubblk->unpk_pos;
++					dwSize = subblk.unpk_size;
++					pDest = pBuffer + subblk.unpk_pos;
+ 				}
+ 			}
+ 		}
+diff --git a/src/sndfile.cpp b/src/sndfile.cpp
+index 24550de..b1734d8 100644
+--- a/src/sndfile.cpp
++++ b/src/sndfile.cpp
+@@ -1091,8 +1091,10 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
+ //	4 = 16-bit ADPCM data with linear table
+ //	5 = signed 16-bit PCM data
+ //	6 = unsigned 16-bit PCM data
+-
+-
++//
++// Does unaligned WORD/DWORD stores to pIns->pSample with the
++// assumption that malloc() returns aligned memory already.
++//
+ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, DWORD dwMemLength)
+ //------------------------------------------------------------------------------
+ {
+@@ -1176,11 +1178,11 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 			len = pIns->nLength * 2;
+ 			if (len > dwMemLength) break;
+ 			int16_t *pSample = (int16_t *)pIns->pSample;
+-			int16_t *p = (int16_t *)lpMemFile;
++			LPCBYTE p = (LPCBYTE)lpMemFile;
+ 			int delta16 = 0;
+-			for (UINT j=0; j<len; j+=2)
++			for (UINT j=0; j<len; j+=2, p += 2)
+ 			{
+-				delta16 += bswapLE16(*p++);
++				delta16 += (int16_t)READ_LE16(p);
+ 				*pSample++ = (int16_t )delta16;
+ 			}
+ 		}
+@@ -1206,13 +1208,10 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 		if (len > dwMemLength) len = dwMemLength & ~1;
+ 		if (len > 1)
+ 		{
+-			signed char *pSample = (signed char *)pIns->pSample;
+-			signed char *pSrc = (signed char *)lpMemFile;
+-			for (UINT j=0; j<len; j+=2)
+-			{
+-			  	// pSample[j] = pSrc[j+1];
+-				// pSample[j+1] = pSrc[j];
+-			        *((uint16_t *)(pSample+j)) = bswapBE16(*((uint16_t *)(pSrc+j)));
++			char *pSample = (char *)pIns->pSample;
++			LPCBYTE pSrc = (LPCBYTE)lpMemFile;
++			for (UINT j=0; j<len; j+=2) {
++				*((uint16_t *)(pSample+j)) = READ_BE16(pSrc+j);
+ 			}
+ 		}
+ 		break;
+@@ -1223,8 +1222,10 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 			len = pIns->nLength * 2;
+ 			if (len > dwMemLength) break;
+ 			int16_t *pSample = (int16_t *)pIns->pSample;
+-			int16_t *pSrc = (int16_t *)lpMemFile;
+-			for (UINT j=0; j<len; j+=2) *pSample++ = bswapLE16(*(pSrc++)) - 0x8000;
++			LPCBYTE pSrc = (LPCBYTE)lpMemFile;
++			for (UINT j=0; j<len; j+=2, pSrc += 2) {
++				*pSample++ = (int16_t)(READ_LE16(pSrc) - 0x8000);
++			}
+ 		}
+ 		break;
+ 
+@@ -1233,16 +1234,11 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 		len = pIns->nLength * 2;
+ 		if (len*2 <= dwMemLength)
+ 		{
+-			signed char *pSample = (signed char *)pIns->pSample;
+-			signed char *pSrc = (signed char *)lpMemFile;
+-			for (UINT j=0; j<len; j+=2)
+-			{
+-			        // pSample[j*2] = pSrc[j+1];
+-				// pSample[j*2+1] = pSrc[j];
+-				// pSample[j*2+2] = pSrc[j+1+len];
+-				// pSample[j*2+3] = pSrc[j+len];
+-			        *((uint16_t *)(pSample+j*2)) = bswapBE16(*((uint16_t *)(pSrc+j)));
+-				*((uint16_t *)(pSample+j*2+2)) = bswapBE16(*((uint16_t *)(pSrc+j+len)));
++			char *pSample = (char *)pIns->pSample;
++			LPCBYTE pSrc = (LPCBYTE)lpMemFile;
++			for (UINT j=0; j<len; j+=2) {
++				*((uint16_t *)(pSample+j*2)) = READ_BE16(pSrc+j);
++				*((uint16_t *)(pSample+j*2+2)) = READ_BE16(pSrc+j+len);
+ 			}
+ 			len *= 2;
+ 		}
+@@ -1282,14 +1278,16 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 			int iadd_l = 0, iadd_r = 0;
+ 			if (nFlags == RS_STPCM16U) { iadd_l = iadd_r = -0x8000; }
+ 			len = pIns->nLength;
+-			int16_t *psrc = (int16_t *)lpMemFile;
++			LPCBYTE psrc0 = (LPCBYTE)lpMemFile;
++			LPCBYTE psrc1 = (LPCBYTE)lpMemFile + len*2;
+ 			int16_t *pSample = (int16_t *)pIns->pSample;
+ 			if (len*4 > dwMemLength) break;
+ 			for (UINT j=0; j<len; j++)
+ 			{
+-				pSample[j*2] = (int16_t) (bswapLE16(psrc[0]) + iadd_l);
+-				pSample[j*2+1] = (int16_t) (bswapLE16(psrc[len]) + iadd_r);
+-				psrc++;
++				pSample[j*2]   = (int16_t) (READ_LE16(psrc0) + iadd_l);
++				pSample[j*2+1] = (int16_t) (READ_LE16(psrc1) + iadd_r);
++				psrc0 += 2;
++				psrc1 += 2;
+ 				if (nFlags == RS_STPCM16D)
+ 				{
+ 					iadd_l = pSample[j*2];
+@@ -1360,13 +1358,13 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 			if (nFlags == RS_STIPCM16U) iadd = -32768;
+ 			len = pIns->nLength;
+ 			if (len*4 > dwMemLength) len = dwMemLength >> 2;
+-			int16_t *psrc = (int16_t *)lpMemFile;
++			LPCBYTE psrc = (LPCBYTE)lpMemFile;
+ 			int16_t *pSample = (int16_t *)pIns->pSample;
+ 			for (UINT j=0; j<len; j++)
+ 			{
+-				pSample[j*2] = (int16_t)(bswapLE16(psrc[0]) + iadd);
+-				pSample[j*2+1] = (int16_t)(bswapLE16(psrc[1]) + iadd);
+-				psrc += 2;
++				pSample[j*2]   = (int16_t)(READ_LE16(psrc+0) + iadd);
++				pSample[j*2+1] = (int16_t)(READ_LE16(psrc+2) + iadd);
++				psrc += 4;
+ 			}
+ 			len *= 4;
+ 		}
+@@ -1379,8 +1377,9 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 		if (dwMemLength > 9)
+ 		{
+ 			const char *psrc = lpMemFile;
+-			char packcharacter = lpMemFile[8], *pdest = (char *)pIns->pSample;
+-			UINT smplen = bswapLE32(*((LPDWORD)(lpMemFile+4)));
++			char *pdest = (char *)pIns->pSample;
++			char packcharacter = lpMemFile[8];
++			UINT smplen = READ_LE32((LPCBYTE)lpMemFile + 4);
+ 			if (smplen > dwMemLength - 9) smplen = dwMemLength - 9;
+ 			len += smplen;
+ 			UINT dmax = pIns->nLength;
+@@ -1419,7 +1418,7 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile,
+ 		{
+ 			LPBYTE pSample = (LPBYTE)pIns->pSample;
+ 			LPBYTE ibuf = (LPBYTE)lpMemFile;
+-			DWORD bitbuf = bswapLE32(*((DWORD *)ibuf));
++			DWORD bitbuf = READ_LE32(ibuf);
+ 			UINT bitnum = 32;
+ 			BYTE dlt = 0, lowbyte = 0;
+ 			LPBYTE ibufend = (LPBYTE)lpMemFile + dwMemLength - 1;
+-- 
+2.37.2
+

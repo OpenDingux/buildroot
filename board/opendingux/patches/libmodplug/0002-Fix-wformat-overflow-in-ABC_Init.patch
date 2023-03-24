@@ -1,0 +1,43 @@
+From af012f4f1a0c4892c0dfeaab96cbbcb353251a2d Mon Sep 17 00:00:00 2001
+From: Gleb Mazovetskiy <glex.spb@gmail.com>
+Date: Wed, 21 Dec 2022 11:46:41 +0000
+Subject: [PATCH 2/4] Fix -wformat-overflow in ABC_Init
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes the following warnings
+
+```
+load_abc.cpp:2374:42: warning: ‘%ld’ directive writing between 1 and 20 bytes into a region of size 18 [-Wformat-overflow=]
+ 2374 |                         sprintf(buf,"%s=-%ld",ABC_ENV_NORANDOMPICK,retval->pickrandom+2);
+      |                                          ^~~
+load_abc.cpp:2374:37: note: directive argument in the range [-9223372036854775806, 9223372036854775807]
+ 2374 |                         sprintf(buf,"%s=-%ld",ABC_ENV_NORANDOMPICK,retval->pickrandom+2);
+      |                                     ^~~~~~~~~
+load_abc.cpp:2374:32: note: ‘sprintf’ output between 24 and 43 bytes into a destination of size 40
+ 2374 |                         sprintf(buf,"%s=-%ld",ABC_ENV_NORANDOMPICK,retval->pickrandom+2);
+      |                         ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+
+Signed-off-by: Gleb Mazovetskiy <glex.spb@gmail.com>
+---
+ src/load_abc.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/load_abc.cpp b/src/load_abc.cpp
+index 8444bd8..93acb13 100644
+--- a/src/load_abc.cpp
++++ b/src/load_abc.cpp
+@@ -2351,7 +2351,7 @@ BOOL CSoundFile::TestABC(const BYTE *lpStream, DWORD dwMemLength)
+ // =====================================================================================
+ static ABCHANDLE *ABC_Init(void)
+ {
+-	static char buf[40];
++	static char buf[43];
+ 	ABCHANDLE   *retval;
+ 	char *p;
+ 	retval = (ABCHANDLE *)calloc(1,sizeof(ABCHANDLE));
+-- 
+2.37.2
+
