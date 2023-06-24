@@ -1,0 +1,125 @@
+From 529890a3df2d8da379938fe217ca974fe58efb99 Mon Sep 17 00:00:00 2001
+From: Siarhei Volkau <lis8215@gmail.com>
+Date: Sat, 24 Jun 2023 22:50:00 +0300
+Subject: [PATCH] tune R4000 automaton to reflect XBurst MIPS32r1 core hazards
+
+The internal XBurst architecture isn't known. There is only information
+about interlock cycles in the programming manuals so the numbers are
+figured by testing execution speed of asm patterns which reflect to
+specific interlocks.
+
+The patch doesn't change MIPS32r2 automaton which corresponds to 74k.md.
+
+Signed-off-by: Siarhei Volkau <lis8215@gmail.com>
+---
+ gcc/config/mips/4k.md | 35 ++++++++++++++++++++---------------
+ 1 file changed, 20 insertions(+), 15 deletions(-)
+
+diff --git a/gcc/config/mips/4k.md b/gcc/config/mips/4k.md
+index 4d7dddd09..3da354ef0 100644
+--- a/gcc/config/mips/4k.md
++++ b/gcc/config/mips/4k.md
+@@ -28,26 +28,31 @@
+ ;; along with GCC; see the file COPYING3.  If not see
+ ;; <http://www.gnu.org/licenses/>.
+ 
+-(define_automaton "r4k_cpu, r4k_mdu")
++;;
++;; Tuned for XBurst MIPS32r1 CPUs known hazards
++;;
++
++(define_automaton "r4k_cpu, r4k_mdu, r4k_load_store")
+ 
+ ;; Integer execution unit.
+ (define_cpu_unit "r4k_ixu_arith"       "r4k_cpu")
+ (define_cpu_unit "r4k_ixu_mpydiv"      "r4k_mdu")
++(define_cpu_unit "r4k_ixu_ls"          "r4k_load_store")
+ 
+-(define_insn_reservation "r4k_int_load" 2
++(define_insn_reservation "r4k_int_load" 3
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "load"))
+-  "r4k_ixu_arith")
++  "r4k_ixu_ls")
+ 
+-(define_insn_reservation "r4k_int_prefetch" 1
++(define_insn_reservation "r4k_int_prefetch" 0
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "prefetch"))
+-  "r4k_ixu_arith")
++  "r4k_ixu_arith+r4k_ixu_ls")
+ 
+-(define_insn_reservation "r4k_int_store" 1
++(define_insn_reservation "r4k_int_store" 0
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "store"))
+-  "r4k_ixu_arith")
++  "r4k_ixu_ls")
+ 
+ ;; 4Kc/4Km 
+ ;; unsigned divide - 8/16/24/32-bit operand have latencies  9/17/25/33
+@@ -69,7 +74,7 @@
+ 
+ ;; 4Kc/4Km fast 32x32 multiply
+ ;; 16x32 is faster, but there's no way to detect this
+-(define_insn_reservation "r4k_mult_4kc" 2
++(define_insn_reservation "r4k_mult_4kc" 3
+   (and (eq_attr "cpu" "4kc")
+        (and (eq_attr "type" "imul,imadd")
+ 	    (eq_attr "mode" "SI")))
+@@ -79,7 +84,7 @@
+ ;; stall the integer unit pipeline. MUL 16x16 or 32x16 forces 1 cycle stall,
+ ;; while MUL 32x32 forces 2 cycle stall.  If next insn use the result, an
+ ;; additional stall is forced.
+-(define_insn_reservation "r4k_mul_4kc" 4
++(define_insn_reservation "r4k_mul_4kc" 3
+   (and (eq_attr "cpu" "4kc")
+        (and (eq_attr "type" "imul3")
+ 	    (eq_attr "mode" "SI")))
+@@ -112,29 +117,29 @@
+   "r4k_ixu_arith+(r4k_ixu_mpydiv*34)")
+ 
+ ;; Move to HI/LO -> MADD/MSUB,MFHI/MFLO has a 1 cycle latency.
+-(define_insn_reservation "r4k_int_mthilo" 1
++(define_insn_reservation "r4k_int_mthilo" 0
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "mthi,mtlo"))
+   "r4k_ixu_arith+r4k_ixu_mpydiv")
+ 
+ ;; Move from HI/LO -> integer operation has a 2 cycle latency.
+-(define_insn_reservation "r4k_int_mfhilo" 2
++(define_insn_reservation "r4k_int_mfhilo" 3
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "mfhi,mflo"))
+   "r4k_ixu_arith+r4k_ixu_mpydiv")
+ 
+ ;; All other integer insns.
+-(define_insn_reservation "r4k_int_alu" 1
++(define_insn_reservation "r4k_int_alu" 0
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "arith,condmove,const,logical,move,nop,shift,signext,slt"))
+   "r4k_ixu_arith")
+ 
+-(define_insn_reservation "r4k_int_branch" 1
++(define_insn_reservation "r4k_int_branch" 0
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "branch"))
+   "r4k_ixu_arith")
+ 
+-(define_insn_reservation "r4k_int_jump_4k" 1
++(define_insn_reservation "r4k_int_jump_4k" 0
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "jump,call"))
+   "r4k_ixu_arith")
+@@ -147,7 +152,7 @@
+ ;;  "r4k_ixu_arith")
+ 
+ ;; Unknown or multi - single issue
+-(define_insn_reservation "r4k_unknown" 1
++(define_insn_reservation "r4k_unknown" 0
+   (and (eq_attr "cpu" "4kc,4kp")
+        (eq_attr "type" "unknown,multi,atomic,syncloop"))
+   "r4k_ixu_arith+r4k_ixu_mpydiv")
+-- 
+2.41.0
+
