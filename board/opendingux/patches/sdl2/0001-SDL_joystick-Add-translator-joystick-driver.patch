@@ -276,7 +276,7 @@ new file mode 100644
 index 0000000..75e3f6e
 --- /dev/null
 +++ b/src/joystick/translator/SDL_translator.c
-@@ -0,0 +1,492 @@
+@@ -0,0 +1,502 @@
 +/*
 +  Simple DirectMedia Layer
 +  Copyright (C) 2021 Paul Cercueil <paul@crapouillou.net>
@@ -581,11 +581,14 @@ index 0000000..75e3f6e
 +
 +static SDL_JoystickGUID TRANSLATOR_JoystickGetDeviceGUID(int device_index)
 +{
-+    SDL_JoystickGUID guid;
-+    /* the GUID is just the first 16 chars of the name for now */
 +    const char *name = TRANSLATOR_JoystickGetDeviceName(device_index);
++    SDL_JoystickGUID guid;
++    Uint16 *guid16 = (Uint16 *)guid.data;
++
 +    SDL_zero(guid);
-+    SDL_memcpy(&guid, name, SDL_min(sizeof(guid), SDL_strlen(name)));
++    *guid16++ = SDL_SwapLE16(SDL_HARDWARE_BUS_UNKNOWN);
++    *guid16++ = SDL_SwapLE16(SDL_crc16(0, name, SDL_strlen(name)));
++    SDL_memcpy((char*)guid16, name, SDL_min(sizeof(guid) - 4, SDL_strlen(name)));
 +    return guid;
 +}
 +
@@ -743,27 +746,34 @@ index 0000000..75e3f6e
 +    return SDL_Unsupported();
 +}
 +
++static const char *
++TRANSLATOR_JoystickGetDevicePath(int device_index)
++{
++    return NULL;
++}
++
 +SDL_JoystickDriver SDL_TRANSLATOR_JoystickDriver =
 +{
-+    TRANSLATOR_JoystickInit,
-+    TRANSLATOR_JoystickGetCount,
-+    TRANSLATOR_JoystickDetect,
-+    TRANSLATOR_JoystickGetDeviceName,
-+    TRANSLATOR_JoystickGetDevicePlayerIndex,
-+    TRANSLATOR_JoystickSetDevicePlayerIndex,
-+    TRANSLATOR_JoystickGetDeviceGUID,
-+    TRANSLATOR_JoystickGetDeviceInstanceID,
-+    TRANSLATOR_JoystickOpen,
-+    TRANSLATOR_JoystickRumble,
-+    TRANSLATOR_JoystickRumbleTriggers,
-+    TRANSLATOR_JoystickHasLED,
-+    TRANSLATOR_JoystickSetLED,
-+    TRANSLATOR_JoystickSendEffect,
-+    TRANSLATOR_JoystickSetSensorsEnabled,
-+    TRANSLATOR_JoystickUpdate,
-+    TRANSLATOR_JoystickClose,
-+    TRANSLATOR_JoystickQuit,
-+    TRANSLATOR_JoystickGetGamepadMapping
++    .Init = TRANSLATOR_JoystickInit,
++    .GetCount = TRANSLATOR_JoystickGetCount,
++    .Detect = TRANSLATOR_JoystickDetect,
++    .GetDeviceName = TRANSLATOR_JoystickGetDeviceName,
++    .GetDevicePath = TRANSLATOR_JoystickGetDevicePath,
++    .GetDevicePlayerIndex = TRANSLATOR_JoystickGetDevicePlayerIndex,
++    .SetDevicePlayerIndex = TRANSLATOR_JoystickSetDevicePlayerIndex,
++    .GetDeviceGUID = TRANSLATOR_JoystickGetDeviceGUID,
++    .GetDeviceInstanceID = TRANSLATOR_JoystickGetDeviceInstanceID,
++    .Open = TRANSLATOR_JoystickOpen,
++    .Rumble = TRANSLATOR_JoystickRumble,
++    .RumbleTriggers = TRANSLATOR_JoystickRumbleTriggers,
++    .GetCapabilities = TRANSLATOR_JoystickHasLED,
++    .SetLED = TRANSLATOR_JoystickSetLED,
++    .SendEffect = TRANSLATOR_JoystickSendEffect,
++    .SetSensorsEnabled = TRANSLATOR_JoystickSetSensorsEnabled,
++    .Update = TRANSLATOR_JoystickUpdate,
++    .Close = TRANSLATOR_JoystickClose,
++    .Quit = TRANSLATOR_JoystickQuit,
++    .GetGamepadMapping = TRANSLATOR_JoystickGetGamepadMapping
 +};
 +
 +#endif /* SDL_JOYSTICK_TRANSLATOR */
