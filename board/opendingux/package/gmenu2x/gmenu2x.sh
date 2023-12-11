@@ -2,7 +2,7 @@
 
 PLATFORMS=$(sed -n 's/^opkPlatforms="\(.*\)"$/\1/p' /usr/share/gmenu2x/gmenu2x.conf)
 
-MODEL=$(sed -n 's/.*,\(.*\)ingenic.*/\1/p' /sys/firmware/devicetree/base/compatible)
+IFS= read -r -d $'\0' MODEL </sys/firmware/devicetree/base/compatible
 case $MODEL in
 	rs90|gcw0)
 		;;
