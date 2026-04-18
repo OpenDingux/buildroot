@@ -8,6 +8,8 @@ on:
   pull_request:
     branches:
       - opendingux
+  schedule:
+    - cron: '* * 1 * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
