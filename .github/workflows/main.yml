@@ -55,17 +55,17 @@ jobs:
         TOP_MAKE_COMMAND: utils/brmake
         BR2_JLEVEL: 0
         FORCE_UNSAFE_CONFIGURE: 1
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: toolchain-${{ matrix.target }}
         path: |
           output/${{ matrix.target }}/images/*.tar*
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: update-${{ matrix.target }}
         path: |
           output/${{ matrix.target }}/images/*.opk
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: always()
       with:
         name: ${{ matrix.target }}-log
@@ -85,19 +85,19 @@ jobs:
         TOP_MAKE_COMMAND: utils/brmake
         BR2_JLEVEL: 0
         FORCE_UNSAFE_CONFIGURE: 1
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: ${{ matrix.target == 'rs90' }}
       with:
         name: odboot-client-linux
         path: |
           output/installer/images/odboot-client
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: ${{ matrix.target == 'rs90' }}
       with:
         name: vmlinuz
         path: |
           output/installer/images/vmlinuz.bin
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: ${{ matrix.target == 'rs90' && always() }}
       with:
         name: ${{ matrix.target }}-installer-log
@@ -155,7 +155,7 @@ jobs:
         PKG_CONFIG_PATH=/usr/lib/pkgconfig cmake -DWITH_ODBOOTD=OFF -DSTATIC_EXE=ON -DEMBEDDED_INSTALLER=vmlinuz.bin -Bbuild -G "MSYS Makefiles"
         cmake --build build --config Release
       working-directory: odbootd
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: odboot-client-windows
         path: |
