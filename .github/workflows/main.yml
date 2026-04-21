@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/opendingux/retro-toolchain/buildroot
 
@@ -106,7 +106,7 @@ jobs:
 
   build-win:
     name: Build odbootd (Windows)
-    runs-on: windows-2019
+    runs-on: windows-latest
     needs: build
     defaults:
       run:
