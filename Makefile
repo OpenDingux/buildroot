@@ -1262,3 +1262,6 @@ include docs/manual/manual.mk
 .PHONY: .WAIT
 
 endif #umask / $(CURDIR) / $(O)
+
+# Include docker-related stuff
+include support/misc/docker.mk
