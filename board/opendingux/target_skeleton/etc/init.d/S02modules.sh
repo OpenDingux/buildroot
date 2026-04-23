@@ -11,7 +11,7 @@ case "$1" in
 
 		if [ "`grep '/lib/modules' /proc/mounts`" ] ; then
 			echo 'Modules filesystem is already mounted' >&2
-			exit 1
+			${EXIT:-exit} 1
 		fi
 
 		if [ -r "$MODULES_FILESYSTEM" ] ; then
@@ -29,5 +29,5 @@ case "$1" in
 
 	*)
 		echo "Usage: $0 {start|stop}"
-		exit 1
+		${EXIT:-exit} 1
 esac

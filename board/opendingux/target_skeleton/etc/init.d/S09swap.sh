@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[ -z "$1" ] || [ "x$1" = "xstart" ] || exit 0
+[ -z "$1" ] || [ "x$1" = "xstart" ] || ${EXIT:-exit} 0
 
 SWAP_PERCENT_MEM=80
 SWAPPINESS=20
@@ -9,7 +9,7 @@ SWAP_COMPRESSOR=lzo-rle
 # User overrides.
 [ -r /usr/local/etc/swap.conf ] && . /usr/local/etc/swap.conf
 
-[ $SWAP_PERCENT_MEM -gt 0 ] || return 0
+[ $SWAP_PERCENT_MEM -gt 0 ] || ${EXIT:-exit} 0
 
 psplash_write "Setup swap..."
 

@@ -12,11 +12,9 @@ for i in /etc/init.d/S??* ;do
      case "$i" in
 	*.sh)
 	    # Source shell script for speed.
-	    (
-		trap - INT QUIT TSTP
+		EXIT=return
 		set start
 		. $i
-	    )
 	    ;;
 	*)
 	    # No sh extension, so fork subprocess.
