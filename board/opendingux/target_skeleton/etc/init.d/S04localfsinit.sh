@@ -9,7 +9,7 @@ chown od:users /media/data/apps /media/data/local/home
 
 mount -o remount,ro /media
 
-for i in bin etc home lib sbin share var; do
+for i in bin etc home lib lib/firmware sbin share var; do
 	mkdir -p /usr/local/$i
 	chown od:users /usr/local/$i
 done
